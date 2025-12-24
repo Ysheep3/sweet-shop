@@ -1,0 +1,19 @@
+spring:
+  profiles:
+    active: dev
+
+  datasource:
+    driver-class-name: ${sweet.datasource.driver-class-name}
+    url: ${sweet.datasource.url}
+    username: ${sweet.datasource.username}
+    password: ${sweet.datasource.password}
+  redis:
+    host: ${sweet.redis.host}
+    database: ${sweet.redis.database}
+
+mybatis-plus:
+  mapper-locations: classpath:/mapper/*.xml
+  type-aliases-package: com.sweet.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
