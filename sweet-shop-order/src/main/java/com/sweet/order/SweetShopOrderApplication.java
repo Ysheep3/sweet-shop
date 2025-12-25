@@ -1,11 +1,11 @@
-package com.sweet.address;
+package com.sweet.order;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class SweetShopAddressApplication {
+public class SweetShopOrderApplication {
     public static void main(String[] args) {
-        SpringApplication.run(SweetShopAddressApplication.class, args);
+        SpringApplication.run(SweetShopOrderApplication.class, args);
     }
 }

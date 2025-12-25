@@ -1,0 +1,37 @@
+package com.sweet.user.entity.pojo;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class Address {
+    /** 地址 id */
+    private Long id;
+    /** 用户 id */
+    private Long userId;
+    /** 收货人 */
+    private String consignee;
+    /** 手机号 */
+    private String phone;
+    /** 省份 */
+    private String province;
+    /** 城市 */
+    private String city;
+    /** 区县 */
+    private String district;
+    /** 详细地址 */
+    private String detailAddress;
+    /** 标签 */
+    private String label;
+    /** 是否默认地址 1是 0否 */
+    private Integer isDefault;
+    /** 创建时间 */
+    private LocalDateTime createTime;
+    /** 更新时间 */
+    private LocalDateTime updateTime;
+}

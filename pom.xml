@@ -25,7 +25,6 @@
         <module>sweet-shop-user</module>
         <module>sweet-shop-cart</module>
         <module>sweet-shop-item</module>
-        <module>sweet-shop-address</module>
         <module>sweet-shop-coupon</module>
         <module>sweet-shop-order</module>
         <module>sweet-shop-common</module>
