@@ -1,19 +1,21 @@
 package com.sweet.user.entity.pojo;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Data
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class User {
     /** 用户 id */
     private Long id;
     /** 用户名 */
-    private String username;
+    private String openId;
     /** 密码 */
     private String password;
     /**  昵称 */

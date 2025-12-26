@@ -12,18 +12,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserLoginDTO {
-    /** 用户 id */
-    private Long id;
-    /** 用户名 */
-    private String username;
-    /** 密码 */
-    private String password;
-    /**  昵称 */
-    private String nickname;
-    /**  手机号 */
-    private String phone;
-    /**  头像 */
-    private String avatar;
-    /**  使用状态 1正常 0禁用 */
-    private Integer status;
+    /** 授权码 */
+    private String code;
 }

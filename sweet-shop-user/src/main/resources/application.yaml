@@ -17,3 +17,10 @@ mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+sweet:
+  alipay:
+    app-id: ${sweet.alipay.app-id}
+    private-key: ${sweet.alipay.private-key}
+    alipay-public-key: ${sweet.alipay.alipay-public-key}
+    gateway-url: ${sweet.alipay.gateway-url}

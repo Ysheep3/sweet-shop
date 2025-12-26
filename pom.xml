@@ -42,13 +42,26 @@
         <mybatis.version>2.1.4</mybatis.version>
         <lombok.version>1.18.20</lombok.version>
         <mysql.version>8.0.33</mysql.version>
-        <mybatis-plus.version>3.4.3</mybatis-plus.version>
+        <mybatis-plus.version>3.4.3.4</mybatis-plus.version>
+        <alipay-easysdk>2.2.0</alipay-easysdk>
+        <alipay>4.40.576.ALL</alipay>
     </properties>
 
     <!-- 依赖管理 -->
     <dependencyManagement>
         <dependencies>
             <!-- Spring Cloud 依赖管理 -->
+            <!--        支付宝依赖沙箱支付 -->
+            <dependency>
+                <groupId>com.alipay.sdk</groupId>
+                <artifactId>alipay-easysdk</artifactId>
+                <version>${alipay-easysdk}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alipay.sdk</groupId>
+                <artifactId>alipay-sdk-java</artifactId>
+                <version>${alipay}</version>
+            </dependency>
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-dependencies</artifactId>
