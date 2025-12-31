@@ -28,6 +28,7 @@
         <module>sweet-shop-coupon</module>
         <module>sweet-shop-order</module>
         <module>sweet-shop-common</module>
+        <module>sweet-shop-gateway</module>
         <!-- 可以添加更多模块 -->
     </modules>
 
@@ -45,11 +46,25 @@
         <mybatis-plus.version>3.4.3.4</mybatis-plus.version>
         <alipay-easysdk>2.2.0</alipay-easysdk>
         <alipay>4.40.576.ALL</alipay>
+        <hutool-all>5.8.11</hutool-all>
+        <fastjson>1.2.83</fastjson>
+        <jjwt>0.9.1</jjwt>
+        <jaxb-api>2.3.1</jaxb-api>
     </properties>
 
     <!-- 依赖管理 -->
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>javax.xml.bind</groupId>
+                <artifactId>jaxb-api</artifactId>
+                <version>${jaxb-api}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt</artifactId>
+                <version>${jjwt}</version>
+            </dependency>
             <!-- Spring Cloud 依赖管理 -->
             <!--        支付宝依赖沙箱支付 -->
             <dependency>
@@ -69,7 +84,16 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>fastjson</artifactId>
+                <version>${fastjson}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.hutool</groupId>
+                <artifactId>hutool-all</artifactId>
+                <version>${hutool-all}</version>
+            </dependency>
             <!-- Spring Cloud Alibaba 依赖管理 -->
             <dependency>
                 <groupId>com.alibaba.cloud</groupId>

@@ -1,0 +1,19 @@
+sweet:
+  auth:
+    excludePaths:
+      - /search/**
+      - /user/login
+      - /employee/**/login
+      - /item/**
+  jwt:
+    admin-secret-key: yyyyyyyyyyyyyyyyyyyyyyyyyyyyzzzzzzzzzzzzzzzzzzzzbbbbbbbbbbbbbbbbbbbb
+    admin-ttl: 18000000
+    admin-token-name: token
+
+    rider-secret-key: yyyyyyyyyyyyyyyyyyyyyyyyyyzzzzzzzzzzzzzzzzzzzzzbbbbbbbbbbbbbbbbbbbb
+    rider-ttl: 18000000
+    rider-token-name: rider-token
+
+    user-secret-key: yyyyyyyyyyyyyyyyyyyyyyyyyyyzzzzzzzzzzzzzzzzzzzzzbbbbbbbbbbbbbbbbbbbb
+    user-ttl: 18000000
+    user-token-name: authentication

@@ -1,5 +1,5 @@
 server:
-  port: 8081
+  port: 8085
 
 sweet:
   datasource:
@@ -10,3 +10,6 @@ sweet:
   redis:
     host: 172.31.41.102:6379
     database: 0
+  cloud:
+    nacos:
+      server-addr: 172.31.41.102:8848

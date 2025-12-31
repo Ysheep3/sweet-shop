@@ -22,4 +22,6 @@ public class UserLoginVO {
     private String avatar;
     /**  使用状态 1正常 0禁用 */
     private Integer status;
+    /**  token */
+    private String token;
 }

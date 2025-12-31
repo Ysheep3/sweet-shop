@@ -1,7 +1,8 @@
 spring:
   profiles:
     active: dev
-
+  application:
+    name: sweet-shop-user
   datasource:
     driver-class-name: ${sweet.datasource.driver-class-name}
     url: ${sweet.datasource.url}
@@ -10,7 +11,9 @@ spring:
   redis:
     host: ${sweet.redis.host}
     database: ${sweet.redis.database}
-
+  cloud:
+    nacos:
+      server-addr: ${sweet.cloud.nacos.server-addr}
 mybatis-plus:
   mapper-locations: classpath:/mapper/*.xml
   type-aliases-package: com.sweet.entity
@@ -24,3 +27,16 @@ sweet:
     private-key: ${sweet.alipay.private-key}
     alipay-public-key: ${sweet.alipay.alipay-public-key}
     gateway-url: ${sweet.alipay.gateway-url}
+
+  jwt:
+    admin-secret-key: yyyyyyyyyyyyyyyyyyyyyyyyyyyyzzzzzzzzzzzzzzzzzzzzbbbbbbbbbbbbbbbbbbbb
+    admin-ttl: 18000000
+    admin-token-name: token
+
+    rider-secret-key: yyyyyyyyyyyyyyyyyyyyyyyyyyzzzzzzzzzzzzzzzzzzzzzbbbbbbbbbbbbbbbbbbbb
+    rider-ttl: 18000000
+    rider-token-name: rider-token
+
+    user-secret-key: yyyyyyyyyyyyyyyyyyyyyyyyyyyzzzzzzzzzzzzzzzzzzzzzbbbbbbbbbbbbbbbbbbbb
+    user-ttl: 18000000
+    user-token-name: authentication

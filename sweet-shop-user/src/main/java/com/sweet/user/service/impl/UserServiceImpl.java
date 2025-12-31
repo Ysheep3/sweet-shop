@@ -1,17 +1,17 @@
 package com.sweet.user.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import com.alipay.api.AlipayApiException;
 import com.alipay.api.AlipayClient;
-import com.alipay.api.DefaultAlipayClient;
 import com.alipay.api.request.AlipaySystemOauthTokenRequest;
 import com.alipay.api.request.AlipayUserInfoShareRequest;
 import com.alipay.api.response.AlipaySystemOauthTokenResponse;
 import com.alipay.api.response.AlipayUserInfoShareResponse;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.sweet.user.common.AlipayProperties;
 import com.sweet.user.entity.dto.UserLoginDTO;
 import com.sweet.user.entity.pojo.User;
+import com.sweet.user.entity.vo.UserLoginVO;
 import com.sweet.user.mapper.UserMapper;
 import com.sweet.user.service.UserService;
 import com.sweet.user.utils.AlipayClientFactory;
@@ -25,7 +25,7 @@ public class UserServiceImpl  implements UserService {
     private final AlipayClientFactory alipayClientFactory;
 
     @Override
-    public User alipayLogin(UserLoginDTO requestParam) throws AlipayApiException {
+    public UserLoginVO alipayLogin(UserLoginDTO requestParam) throws AlipayApiException {
         AlipaySystemOauthTokenResponse response = getResponse(requestParam);
         String openId = response.getOpenId();
 
@@ -51,7 +51,7 @@ public class UserServiceImpl  implements UserService {
             userMapper.insert(user);
         }
 
-        return user;
+        return BeanUtil.toBean(user, UserLoginVO.class);
     }
 
     private AlipaySystemOauthTokenResponse getResponse(UserLoginDTO requestParam) throws AlipayApiException {

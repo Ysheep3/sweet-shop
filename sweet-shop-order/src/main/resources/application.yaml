@@ -1,7 +1,8 @@
 spring:
   profiles:
     active: dev
-
+  application:
+    name: sweet-shop-order
   datasource:
     driver-class-name: ${sweet.datasource.driver-class-name}
     url: ${sweet.datasource.url}
@@ -10,7 +11,9 @@ spring:
   redis:
     host: ${sweet.redis.host}
     database: ${sweet.redis.database}
-
+  cloud:
+    nacos:
+      server-addr: ${sweet.cloud.nacos.server-addr}
 mybatis-plus:
   mapper-locations: classpath:/mapper/*.xml
   type-aliases-package: com.sweet.entity
