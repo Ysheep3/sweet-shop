@@ -18,7 +18,7 @@ import sweet.shop.common.utils.JwtUtil;
 import java.util.HashMap;
 import java.util.Map;
 
-@RestController("/userController")
+@RestController("userController")
 @RequestMapping("/user")
 @RequiredArgsConstructor
 public class UserController {
