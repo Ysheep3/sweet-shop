@@ -4,7 +4,7 @@ sweet:
       - /search/**
       - /user/login
       - /employee/**/login
-      - /item/**
+      - /items/user/**
   jwt:
     admin-secret-key: yyyyyyyyyyyyyyyyyyyyyyyyyyyyzzzzzzzzzzzzzzzzzzzzbbbbbbbbbbbbbbbbbbbb
     admin-ttl: 18000000

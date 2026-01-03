@@ -9,8 +9,8 @@ spring:
       server-addr: 172.31.41.102:8848
     gateway:
       routes:
-        - id: item-service     # 网关 id
-          uri: lb://item-service  # 路由转发目标服务 lb代表负载均衡 会从注册中心中拉取服务列表 item-service是微服务名
+        - id: sweet-shop-item     # 网关 id
+          uri: lb://sweet-shop-item   # 路由转发目标服务 lb代表负载均衡 会从注册中心中拉取服务列表 item-service是微服务名
           predicates:
             - Path=/items/**,/search/**   # 判断请求路径是否符合当前规则, 符合则路由到目标服务
         #          filters:
