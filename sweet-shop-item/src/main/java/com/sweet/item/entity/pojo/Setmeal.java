@@ -25,6 +25,8 @@ public class Setmeal {
 
     private String name;
 
+    private Integer type;
+
     private BigDecimal price;
 
     private Integer status;

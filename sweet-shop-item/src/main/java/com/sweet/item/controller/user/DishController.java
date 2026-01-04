@@ -4,6 +4,7 @@ import com.sweet.item.entity.vo.DishVO;
 import com.sweet.item.service.DishService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import sweet.shop.common.result.Result;
@@ -28,9 +29,9 @@ public class DishController {
         return Result.success(Items);
     }
 
-    @GetMapping("/all")
-    public Result<List<Object>> getAllItems(Long categoryId) {
-        List<Object> items = dishService.getAllItems(categoryId);
-        return Result.success(items);
+    @GetMapping("/{id}")
+    public Result<DishVO> getById(@PathVariable Long id) {
+        DishVO dishVO = dishService.getById(id);
+        return Result.success(dishVO);
     }
 }

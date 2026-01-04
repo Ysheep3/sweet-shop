@@ -26,6 +26,8 @@ public class SetmealVO implements Serializable {
 
     private BigDecimal price;
 
+    private Integer type;
+
     private Integer status;
 
     private String description;

@@ -6,6 +6,8 @@ public class MessageConstant {
     public static final String CATEGORY_HAVE_NOT_DISH = "该分类下没有菜品";
     public static final String CATEGORY_HAVE_NOT_SETMEAL = "该分类下没有套餐";
     public static final String SEARCH_KEYWORD_NOT_NULL = "搜索词不能为空";
+    public static final String DISH_OR_SETMEAL_ID_NOT_NULL = "查询商品详情ID不能为空";
+    public static final String GET_ERROR = "查询失败";
     public static final String STOP_CATEGORY_ERROR_BY_DISH = "分类关联了菜品,无法停售";
     public static final String DELETE_CATEGORY_ERROR_BY_SETMEAL = "分类关联了套餐,无法删除";
     public static final String DELETE_DISH_ERROR_BY_SETMEAL = "菜品关联了套餐,无法删除";

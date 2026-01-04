@@ -1,8 +1,8 @@
 package com.sweet.item.entity.pojo;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
+import com.alibaba.fastjson.annotation.JSONField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -33,6 +33,8 @@ public class Dish implements Serializable {
     private String description;
 
     private Integer status;
+
+    private Integer type;
 
     /** 销量 */
     private Integer sales;

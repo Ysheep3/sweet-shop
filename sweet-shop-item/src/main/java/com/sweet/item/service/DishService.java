@@ -9,5 +9,7 @@ public interface DishService {
 
     List<Object> searchAll(String keyword);
 
-    List<Object> getAllItems(Long categoryId);
+    //List<Object> getAllItems(Long categoryId);
+
+    DishVO getById(Long id);
 }

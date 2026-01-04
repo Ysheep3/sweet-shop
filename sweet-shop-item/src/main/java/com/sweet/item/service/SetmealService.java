@@ -8,4 +8,6 @@ import java.util.List;
 @Service
 public interface SetmealService {
     List<SetmealVO> getSetmealByCategoryId(Long categoryId);
+
+    SetmealVO getById(Long id);
 }

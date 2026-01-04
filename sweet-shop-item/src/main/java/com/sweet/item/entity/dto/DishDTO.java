@@ -16,6 +16,8 @@ public class DishDTO {
 
     private Long categoryId;
 
+    private Integer type;
+
     private BigDecimal price;
 
     private String image;

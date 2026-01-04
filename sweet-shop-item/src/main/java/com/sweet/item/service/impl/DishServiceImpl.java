@@ -36,21 +36,39 @@ public class DishServiceImpl implements DishService {
         if (categoryId == null) {
             throw new CategoryErrorException(MessageConstant.CATEGORY_ID_NOT_NULL);
         }
-
         LambdaQueryWrapper<Dish> wrapper = Wrappers.lambdaQuery(Dish.class)
-                .eq(Dish::getCategoryId, categoryId)
                 .eq(Dish::getStatus, ItemStatusEnum.ENABLED.getCode());
-        List<Dish> dishes = dishMapper.selectList(wrapper);
+
+        List<Dish> dishes = new ArrayList<>();
+        List<DishVO> dishVOList = new ArrayList<>();
+
+        if (categoryId == 0) {
+            dishes = dishMapper.selectList(wrapper);
+            if (CollectionUtil.isEmpty(dishes)) {
+                throw new DishGetErrorException(MessageConstant.CATEGORY_HAVE_NOT_DISH);
+            }
+
+            for (Dish dish : dishes) {
+                DishVO dishVO = BeanUtil.toBean(dish, DishVO.class);
+                dishVOList.add(dishVO);
+            }
+
+            return dishVOList;
+        }
+
+        wrapper.eq(Dish::getCategoryId, categoryId);
+
+        dishes = dishMapper.selectList(wrapper);
 
         if (CollectionUtil.isEmpty(dishes)) {
             throw new DishGetErrorException(MessageConstant.CATEGORY_HAVE_NOT_DISH);
         }
 
-        List<DishVO> dishVOList = new ArrayList<>();
         for (Dish dish : dishes) {
             DishVO dishVO = BeanUtil.toBean(dish, DishVO.class);
             dishVOList.add(dishVO);
         }
+
         return dishVOList;
     }
 
@@ -87,6 +105,7 @@ public class DishServiceImpl implements DishService {
         return itemList;
     }
 
+    /*
     @Override
     public List<Object> getAllItems(Long categoryId) {
         List<Object> itemList = new ArrayList<>();
@@ -116,5 +135,21 @@ public class DishServiceImpl implements DishService {
         }
 
         return itemList;
+    }
+*/
+
+    @Override
+    public DishVO getById(Long id) {
+        if (id == null) {
+            throw new DishGetErrorException(MessageConstant.DISH_OR_SETMEAL_ID_NOT_NULL);
+        }
+
+        Dish dish = dishMapper.selectById(id);
+
+        if (dish != null) {
+            return BeanUtil.toBean(dish, DishVO.class);
+        }
+
+        throw new DishGetErrorException(MessageConstant.GET_ERROR);
     }
 }
