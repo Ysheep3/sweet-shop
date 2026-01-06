@@ -1,10 +1,12 @@
 sweet:
   auth:
     excludePaths:
-      - /search/**
+      - /items/user/dish/search/**
       - /user/login
       - /employee/**/login
-      - /items/user/**
+      - /items/user/dish/list
+      - /items/user/setmeal/list
+      - /items/user/category/list
   jwt:
     admin-secret-key: yyyyyyyyyyyyyyyyyyyyyyyyyyyyzzzzzzzzzzzzzzzzzzzzbbbbbbbbbbbbbbbbbbbb
     admin-ttl: 18000000

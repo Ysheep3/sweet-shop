@@ -1,6 +1,5 @@
 package com.sweet.gateway.filters;
 
-
 import com.sweet.gateway.properties.AuthProperties;
 import com.sweet.gateway.properties.JwtProperties;
 import io.jsonwebtoken.Claims;

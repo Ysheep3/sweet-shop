@@ -1,0 +1,30 @@
+//package com.sweet.item.entity.dto;
+//
+//import com.baomidou.mybatisplus.annotation.TableName;
+//import lombok.AllArgsConstructor;
+//import lombok.Builder;
+//import lombok.Data;
+//import lombok.NoArgsConstructor;
+//
+//import java.io.Serializable;
+//import java.math.BigDecimal;
+//import java.time.LocalDateTime;
+//
+//@Data
+//@AllArgsConstructor
+//@NoArgsConstructor
+//public class FavoriteDTO implements Serializable {
+//    private static final long serialVersionUID = 1L;
+//
+//    private Long id;
+//
+//    private Long userId;
+//
+//    private Long dishId;
+//
+//    private Long setmealId;
+//
+//    private String name;
+//
+//    private BigDecimal price;
+//}

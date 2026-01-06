@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DishVO implements Serializable {
-    private Long id;
+    private String  id;
     //菜品名称
     private String name;
     //菜品分类id

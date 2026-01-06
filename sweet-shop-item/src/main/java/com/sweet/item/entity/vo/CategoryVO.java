@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class CategoryVO implements Serializable {
     /** 分类id */
-    private Long id;
+    private String  id;
 
     /**类型: 1菜品分类 2套餐分类 */
     private Integer type;

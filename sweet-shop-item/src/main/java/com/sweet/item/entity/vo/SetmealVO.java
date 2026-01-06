@@ -18,9 +18,9 @@ import java.util.List;
 @NoArgsConstructor
 public class SetmealVO implements Serializable {
 
-    private Long id;
+    private String  id;
 
-    private Long categoryId;
+    private String categoryId;
 
     private String name;
 
