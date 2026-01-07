@@ -5,7 +5,7 @@ import com.sweet.item.entity.vo.FavoriteVO;
 import com.sweet.item.service.FavoriteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import sweet.shop.common.result.Result;
+import com.sweet.common.result.Result;
 
 import java.util.List;
 

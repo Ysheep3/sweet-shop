@@ -2,7 +2,6 @@ package com.sweet.item.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.sweet.item.entity.dto.FavoriteDTO;
@@ -12,9 +11,9 @@ import com.sweet.item.mapper.FavoriteMapper;
 import com.sweet.item.service.FavoriteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import sweet.shop.common.constant.MessageConstant;
-import sweet.shop.common.context.BaseContext;
-import sweet.shop.common.exception.FavoriteBusinessException;
+import com.sweet.common.constant.MessageConstant;
+import com.sweet.common.context.BaseContext;
+import com.sweet.common.exception.FavoriteBusinessException;
 
 import java.util.ArrayList;
 import java.util.List;

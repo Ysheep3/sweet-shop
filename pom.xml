@@ -29,6 +29,7 @@
         <module>sweet-shop-order</module>
         <module>sweet-shop-common</module>
         <module>sweet-shop-gateway</module>
+        <module>sweet-shop-api</module>
         <!-- 可以添加更多模块 -->
     </modules>
 

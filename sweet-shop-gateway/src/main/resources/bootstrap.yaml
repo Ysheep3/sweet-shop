@@ -22,7 +22,7 @@ spring:
         - id: sweet-shop-cart
           uri: lb://sweet-shop-cart
           predicates:
-            - Path=/cart/**
+            - Path=/shopping-cart/**
         - id: sweet-shop-coupon
           uri: lb://sweet-shop-coupon
           predicates:

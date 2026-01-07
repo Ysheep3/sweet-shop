@@ -6,23 +6,19 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.sweet.item.common.ItemStatusEnum;
-import com.sweet.item.entity.dto.DishPageDTO;
 import com.sweet.item.entity.pojo.Dish;
 import com.sweet.item.entity.pojo.Setmeal;
 import com.sweet.item.entity.vo.DishVO;
 import com.sweet.item.mapper.DishMapper;
 import com.sweet.item.mapper.SetmealMapper;
 import com.sweet.item.service.DishService;
-import com.sweet.item.service.SetmealService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import sweet.shop.common.constant.MessageConstant;
-import sweet.shop.common.exception.CategoryErrorException;
-import sweet.shop.common.exception.DishGetErrorException;
-import sweet.shop.common.result.PageResult;
+import com.sweet.common.constant.MessageConstant;
+import com.sweet.common.exception.CategoryErrorException;
+import com.sweet.common.exception.DishGetErrorException;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 @Service

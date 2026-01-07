@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import sweet.shop.common.utils.JwtUtil;
+import com.sweet.common.utils.JwtUtil;
 
 import java.util.List;
 

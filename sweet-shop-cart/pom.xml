@@ -21,6 +21,20 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>com.sweet.api</groupId>
+            <artifactId>sweet-shop-api</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>sweet-shop-common</groupId>
+            <artifactId>sweet-shop-common</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
         <!--nacos 服务注册发现-->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
