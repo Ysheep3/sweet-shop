@@ -13,4 +13,8 @@ public interface ShoppingCartService {
     List<ShoppingCartVO> list();
 
     void delete(ShoppingCartDTO requestParam);
+
+    void deleteById(Long id);
+
+    void clear();
 }

@@ -10,6 +10,9 @@ public class MessageConstant {
     public static final String GET_ERROR = "查询失败";
     public static final String COLLECT_ERROR = "收藏失败";
     public static final String DO_ERROR = "操作失败";
+    public static final String INSERT_ERROR = "添加失败";
+    public static final String DELETE_ERROR = "删除失败";
+    public static final String UPDATE_ERROR = "修改失败";
     public static final String STOP_CATEGORY_ERROR_BY_DISH = "分类关联了菜品,无法停售";
     public static final String DELETE_CATEGORY_ERROR_BY_SETMEAL = "分类关联了套餐,无法删除";
     public static final String DELETE_DISH_ERROR_BY_SETMEAL = "菜品关联了套餐,无法删除";

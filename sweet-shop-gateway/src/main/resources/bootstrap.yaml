@@ -18,7 +18,7 @@ spring:
         - id: sweet-shop-user
           uri: lb://sweet-shop-user
           predicates:
-            - Path=/user/**,/addresses/**,/employee/**
+            - Path=/user/**,/address/**,/employee/**
         - id: sweet-shop-cart
           uri: lb://sweet-shop-cart
           predicates:

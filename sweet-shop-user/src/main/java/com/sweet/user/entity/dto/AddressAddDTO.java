@@ -14,8 +14,6 @@ import java.time.LocalDateTime;
 public class AddressAddDTO {
     /** 地址 id */
     private Long id;
-    /** 用户 id */
-    private Long userId;
     /** 收货人 */
     private String consignee;
     /** 手机号 */

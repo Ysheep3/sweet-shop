@@ -11,9 +11,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class AddressVO {
     /** 地址 id */
-    private Long id;
-    /** 用户 id */
-    private Long userId;
+    private String id;
     /** 收货人 */
     private String consignee;
     /** 手机号 */

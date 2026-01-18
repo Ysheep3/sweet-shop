@@ -32,6 +32,9 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
 
     @Override
     public void addItemToCart(ShoppingCartDTO requestParam) {
+        if (requestParam.getDishId() == null && requestParam.getSetmealId() == null) {
+            throw new ShoppingCartBusinessException(MessageConstant.INSERT_ERROR);
+        }
         // 判断购物车中是否已经有相同的数据
         ShoppingCart shoppingCart = BeanUtil.copyProperties(requestParam, ShoppingCart.class);
         shoppingCart.setUserId(BaseContext.getCurrentId());
@@ -114,6 +117,35 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
         } else {
             row = shoppingCartMapper.deleteById(cart);
         }
+
+        if (row < 0) {
+            throw new ShoppingCartBusinessException(MessageConstant.DO_ERROR);
+        }
+    }
+
+    @Override
+    public void deleteById(Long id) {
+        if (id == null) {
+            throw new ShoppingCartBusinessException(MessageConstant.DO_ERROR);
+        }
+        LambdaQueryWrapper<ShoppingCart> wrapper = Wrappers.lambdaQuery(ShoppingCart.class)
+                .eq(ShoppingCart::getUserId, BaseContext.getCurrentId())
+                .eq(ShoppingCart::getId, id);
+
+        int row = shoppingCartMapper.delete(wrapper);
+
+        if (row < 0) {
+            throw new ShoppingCartBusinessException(MessageConstant.DO_ERROR);
+        }
+
+    }
+
+    @Override
+    public void clear() {
+        LambdaQueryWrapper<ShoppingCart> wrapper = Wrappers.lambdaQuery(ShoppingCart.class)
+                .eq(ShoppingCart::getUserId, BaseContext.getCurrentId());
+
+        int row = shoppingCartMapper.delete(wrapper);
 
         if (row < 0) {
             throw new ShoppingCartBusinessException(MessageConstant.DO_ERROR);

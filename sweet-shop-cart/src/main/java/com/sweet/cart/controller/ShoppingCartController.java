@@ -38,4 +38,16 @@ public class ShoppingCartController {
         shoppingCartService.delete(requestParam);
         return Result.success();
     }
+
+    @DeleteMapping("/{id}")
+    public Result<Void> deleteById(@PathVariable Long id) {
+        shoppingCartService.deleteById(id);
+        return Result.success();
+    }
+
+    @DeleteMapping("clear")
+    public Result<Void> clear() {
+        shoppingCartService.clear();
+        return Result.success();
+    }
 }
