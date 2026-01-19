@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    namespace:名称空间
+-->
+<mapper namespace="com.sweet.coupon.mapper.UserCouponMapper">
+
+    <select id="list" resultType="com.sweet.coupon.entity.dto.UserCouponDTO">
+        select uc.*, c.name as name,c.type as type,
+        c.tags as tags, c.discount as discount,
+        c.condition_amount as conditionAmount,
+        c.reduce_amount as reduceAmount
+        from user_coupon uc
+        left join coupon c on uc.coupon_id = c.id
+        where user_id = #{userId}
+        and uc.status = #{status}
+        <if test="status == 0">
+            and uc.start_time &lt;= NOW()
+        </if>
+        <if test="status == 0">
+            and uc.end_time &gt;= NOW()
+        </if>
+        order by uc.receive_time desc
+    </select>
+</mapper>

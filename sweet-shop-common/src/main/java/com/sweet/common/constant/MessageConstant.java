@@ -13,6 +13,9 @@ public class MessageConstant {
     public static final String INSERT_ERROR = "添加失败";
     public static final String DELETE_ERROR = "删除失败";
     public static final String UPDATE_ERROR = "修改失败";
+    public static final String CLAIM_COUPON_ERROR = "优惠券领取失败";
+    public static final String CLAIM_COUPON_LIMIT_ERROR = "优惠券领取次数已达上限";
+    public static final String GET_COUPON_ERROR = "该优惠券不存在";
     public static final String STOP_CATEGORY_ERROR_BY_DISH = "分类关联了菜品,无法停售";
     public static final String DELETE_CATEGORY_ERROR_BY_SETMEAL = "分类关联了套餐,无法删除";
     public static final String DELETE_DISH_ERROR_BY_SETMEAL = "菜品关联了套餐,无法删除";

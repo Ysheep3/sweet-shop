@@ -20,6 +20,15 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson-spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>sweet-shop-common</groupId>
+            <artifactId>sweet-shop-common</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
         <!--nacos 服务注册发现-->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>

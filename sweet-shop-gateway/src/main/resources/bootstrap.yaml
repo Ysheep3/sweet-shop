@@ -26,7 +26,7 @@ spring:
         - id: sweet-shop-coupon
           uri: lb://sweet-shop-coupon
           predicates:
-            - Path=/coupon/**
+            - Path=/coupon/**,/user-coupon/**
         - id: sweet-shop-order
           uri: lb://sweet-shop-order
           predicates:
