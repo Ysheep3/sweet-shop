@@ -33,9 +33,21 @@ public class ShoppingCartController {
         return Result.success(shoppingCartVOS);
     }
 
+    @GetMapping("/listByIds")
+    public Result<List<ShoppingCartVO>> listByIds(@RequestParam("ids") List<Long> ids) {
+        List<ShoppingCartVO> shoppingCartVOS = shoppingCartService.listByIds(ids);
+        return Result.success(shoppingCartVOS);
+    }
+
     @PostMapping("/delete")
     public Result<Void> sub(@RequestBody ShoppingCartDTO requestParam) {
         shoppingCartService.delete(requestParam);
+        return Result.success();
+    }
+
+    @DeleteMapping("/deleteByIds")
+    public Result<Void> deleteByIds(@RequestParam("ids") List<Long> ids) {
+        shoppingCartService.deleteByIds(ids);
         return Result.success();
     }
 
@@ -48,6 +60,12 @@ public class ShoppingCartController {
     @DeleteMapping("clear")
     public Result<Void> clear() {
         shoppingCartService.clear();
+        return Result.success();
+    }
+
+    @PostMapping("/again")
+    Result<Void> again(@RequestBody List<ShoppingCartVO> shoppingCartVOS) {
+        shoppingCartService.again(shoppingCartVOS);
         return Result.success();
     }
 }

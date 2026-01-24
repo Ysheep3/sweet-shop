@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    namespace:名称空间
+-->
+<mapper namespace="com.sweet.order.mapper.OrderDetailMapper">
+
+    <insert id="insertBatchs">
+        INSERT INTO order_detail
+        (
+        order_id,
+        dish_id,
+        setmeal_id,
+        name,
+        image,
+        number,
+        amount
+        )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.orderId},
+            #{item.dishId},
+            #{item.setmealId},
+            #{item.name},
+            #{item.image},
+            #{item.number},
+            #{item.amount}
+            )
+        </foreach>
+    </insert>
+    <select id="getTop10" resultType="com.sweet.order.entity.pojo.OrderDetail"
+            parameterType="java.lang.Long">
+        select order_detail.name as name, sum(number) as number
+        from order_detail where order_id in
+        <foreach collection="orderIds" item="orderId" open="(" close=")" separator=",">
+            #{orderId}
+        </foreach>
+        group by name
+        ORDER BY number desc
+        limit 10
+    </select>
+
+</mapper>

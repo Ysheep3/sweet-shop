@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    namespace:名称空间
+-->
+<mapper namespace="com.sweet.item.mapper.DishMapper">
+
+    <select id="pageQueryByCategoryId"
+            resultType="com.sweet.item.entity.vo.DishVO">
+        select d.*, c.name as categoryName
+        from dish d
+        left join category c on c.id = d.category_id
+
+        <where>
+            <if test="dish.name != null and dto.name != ''">
+                and d.name like concat('%', #{dish.name}, '%')
+            </if>
+
+            <if test="dish.categoryId != null">
+                and d.category_id = #{dish.categoryId}
+            </if>
+
+            <if test="dish.status != null">
+                and d.status = #{dish.status}
+            </if>
+        </where>
+
+    </select>
+</mapper>

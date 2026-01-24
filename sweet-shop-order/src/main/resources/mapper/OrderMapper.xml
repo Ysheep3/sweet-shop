@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    namespace:名称空间
+-->
+<mapper namespace="com.sweet.order.mapper.OrderMapper">
+    <select id="pageQuery" resultType="com.sweet.order.entity.vo.OrderVO"
+            parameterType="com.sweet.order.entity.dto.OrdersPageDTO">
+        select *
+        from orders
+        <where>
+            <if test="order.beginTime != null">
+                and order_time &gt; #{order.beginTime}
+            </if>
+            <if test="order.endTime != null">
+                and order_time &lt; #{order.endTime}
+            </if>
+            <if test="order.number != null">
+                and number like concat('%',#{order.number},'%')
+            </if>
+            <if test="order.status != null">
+                and status = #{order.status}
+            </if>
+            <if test="order.phone != null">
+                and phone like concat('%',#{order.phone},'%')
+            </if>
+        </where>
+        order by order_time desc
+    </select>
+    <select id="countOrderByStatus" resultType="com.sweet.api.dto.OrderOverViewVO">
+        select count(id) as allOrders,
+        count(case when status = 6 then 1 end) as cancelledOrders,
+        count(case when status = 5 then 1 end) as completedOrders,
+        count(case when status = 3 then 1 end) as deliveredOrders,
+        count(case when status = 2 then 1 end) as waitingOrders
+        from orders
+        <where>
+            <if test="beginTime != null">
+                and order_time &gt; #{beginTime}
+            </if>
+            <if test="endTime != null">
+                and order_time &lt; #{endTime}
+            </if>
+        </where>
+    </select>
+</mapper>

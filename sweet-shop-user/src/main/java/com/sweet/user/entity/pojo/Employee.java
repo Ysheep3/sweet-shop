@@ -1,6 +1,7 @@
 package com.sweet.user.entity.pojo;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -9,6 +10,7 @@ import java.time.LocalDateTime;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class Employee {
     /** 用户 id */
     private Long id;
@@ -30,4 +32,8 @@ public class Employee {
     private LocalDateTime createTime;
     /** 更新时间 */
     private LocalDateTime updateTime;
+
+    private Long createUser;
+
+    private Long updateUser;
 }

@@ -17,4 +17,10 @@ public interface ShoppingCartService {
     void deleteById(Long id);
 
     void clear();
+
+    List<ShoppingCartVO> listByIds(List<Long> ids);
+
+    void deleteByIds(List<Long> ids);
+
+    void again(List<ShoppingCartVO> shoppingCartVOS);
 }

@@ -3,7 +3,8 @@ sweet:
     excludePaths:
       - /items/user/dish/search/**
       - /user/login
-      - /employee/**/login
+      - /admin/employee/login
+      - /rider/login
       - /items/user/dish/list
       - /items/user/setmeal/list
       - /items/user/category/list

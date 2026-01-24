@@ -8,9 +8,10 @@ spring:
     url: ${sweet.datasource.url}
     username: ${sweet.datasource.username}
     password: ${sweet.datasource.password}
-  redis:
-    host: ${sweet.redis.host}
-    database: ${sweet.redis.database}
+  data:
+    redis:
+      host: ${sweet.redis.host}
+      database: ${sweet.redis.database}
   cloud:
     nacos:
       server-addr: ${sweet.cloud.nacos.server-addr}

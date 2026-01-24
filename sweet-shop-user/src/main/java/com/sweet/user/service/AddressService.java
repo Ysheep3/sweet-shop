@@ -16,4 +16,6 @@ public interface AddressService {
     void update(AddressAddDTO requestParam);
 
     void delete(Long id);
+
+    AddressVO getDefaultAddress();
 }

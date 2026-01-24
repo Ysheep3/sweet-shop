@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.sweet.common.constant.MessageConstant;
 import com.sweet.common.context.BaseContext;
 import com.sweet.common.exception.AddressBookBusinessException;
+import com.sweet.user.common.AddressDefaultEnum;
 import com.sweet.user.entity.dto.AddressAddDTO;
 import com.sweet.user.entity.pojo.Address;
 import com.sweet.user.entity.vo.AddressVO;
@@ -118,5 +119,21 @@ public class AddressServiceImpl implements AddressService {
         if (row < 1) {
             throw new AddressBookBusinessException(MessageConstant.DELETE_ERROR);
         }
+    }
+
+    @Override
+    public AddressVO getDefaultAddress() {
+        Address address = addressMapper.selectOne(
+                Wrappers.lambdaQuery(Address.class)
+                        .eq(Address::getUserId, BaseContext.getCurrentId())
+                        .eq(Address::getIsDefault, AddressDefaultEnum.DEFAULT.getCode())
+        );
+
+        if (address == null) {
+            throw new AddressBookBusinessException(MessageConstant.GET_ADDRESS_DEFAULT_ERROR);
+        }
+
+
+        return BeanUtil.toBean(address, AddressVO.class);
     }
 }

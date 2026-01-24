@@ -40,6 +40,4 @@ public class SetmealDish implements Serializable {
 
     /** "菜品份数" */
     private Integer copies;
-
-
 }

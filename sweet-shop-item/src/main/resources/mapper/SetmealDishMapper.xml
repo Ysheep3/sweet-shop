@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    namespace:名称空间
+-->
+<mapper namespace="com.sweet.item.mapper.SetmealDishMapper">
+
+    <insert id="insertBatchs">
+        insert into setmeal_dish
+        (setmeal_id, dish_id, name, price, copies)
+        values
+        <foreach collection="list"
+                 item="item"
+                 separator=",">
+            (
+            #{item.setmealId},
+            #{item.dishId},
+            #{item.name},
+            #{item.price},
+            #{item.copies}
+            )
+        </foreach>
+    </insert>
+
+    <delete id="deleteBySetmealIds" parameterType="java.lang.Long">
+        select *
+        from setmeal_dish
+        where setmeal_id in
+        <foreach collection="setmealIds" item="setmealId" open="(" close=")" separator=",">
+            #{setmealId}
+        </foreach>
+    </delete>
+
+
+</mapper>

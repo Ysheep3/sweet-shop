@@ -9,4 +9,6 @@ import java.util.List;
 @Mapper
 public interface ShoppingCartMapper extends BaseMapper<ShoppingCart> {
     List<ShoppingCart> list(ShoppingCart shoppingCart);
+
+    void insertBatch(List<ShoppingCart> shoppingCarts);
 }

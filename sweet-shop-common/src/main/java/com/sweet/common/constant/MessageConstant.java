@@ -16,6 +16,15 @@ public class MessageConstant {
     public static final String CLAIM_COUPON_ERROR = "优惠券领取失败";
     public static final String CLAIM_COUPON_LIMIT_ERROR = "优惠券领取次数已达上限";
     public static final String GET_COUPON_ERROR = "该优惠券不存在";
+    public static final String GET_ADDRESS_DEFAULT_ERROR = "你没有设置默认地址";
+    public static final String ORDERS_ID_IS_NULL = "订单号不能为空";
+    public static final String ORDERS_IS_NULL = "订单不存在";
+    public static final String ORDERS_STATUS_ERROR = "订单状态异常";
+    public static final String ORDERS_PAY_ERROR = "订单支付失败";
+    public static final String EMPLOYEE_IS_NULL = "该员工不存在";
+    public static final String DISH_IS_NULL = "该菜品不存在";
+    public static final String SETMEAL_IS_NULL = "该套餐不存在";
+    public static final String SHOP_STATUS_NULL = "没有设置店铺状态";
     public static final String STOP_CATEGORY_ERROR_BY_DISH = "分类关联了菜品,无法停售";
     public static final String DELETE_CATEGORY_ERROR_BY_SETMEAL = "分类关联了套餐,无法删除";
     public static final String DELETE_DISH_ERROR_BY_SETMEAL = "菜品关联了套餐,无法删除";

@@ -1,2 +1,3 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  com.sweet.common.config.MvcConfig
+  com.sweet.common.config.MvcConfig,\
+  com.sweet.common.utils.AlipayClientFactory

@@ -18,7 +18,7 @@ spring:
         - id: sweet-shop-user
           uri: lb://sweet-shop-user
           predicates:
-            - Path=/user/**,/address/**,/employee/**
+            - Path=/user/**,/address/**,/admin/**,/rider/**
         - id: sweet-shop-cart
           uri: lb://sweet-shop-cart
           predicates:
@@ -30,6 +30,6 @@ spring:
         - id: sweet-shop-order
           uri: lb://sweet-shop-order
           predicates:
-            - Path=/order/**
+            - Path=/order/**,/notify,/return
     #      default-filters:
     #        - AddRequestHeader=Me,I am handsome

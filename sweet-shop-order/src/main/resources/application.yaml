@@ -8,9 +8,10 @@ spring:
     url: ${sweet.datasource.url}
     username: ${sweet.datasource.username}
     password: ${sweet.datasource.password}
-  redis:
-    host: ${sweet.redis.host}
-    database: ${sweet.redis.database}
+  data:
+    redis:
+      host: ${sweet.redis.host}
+      database: ${sweet.redis.database}
   cloud:
     nacos:
       server-addr: ${sweet.cloud.nacos.server-addr}
@@ -20,3 +21,10 @@ mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+sweet:
+  alipay:
+    app-id: ${sweet.alipay.app-id}
+    private-key: ${sweet.alipay.private-key}
+    alipay-public-key: ${sweet.alipay.alipay-public-key}
+    gateway-url: ${sweet.alipay.gateway-url}
+    notify-url: ${sweet.alipay.notify-url}

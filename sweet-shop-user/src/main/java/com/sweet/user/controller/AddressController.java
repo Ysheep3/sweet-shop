@@ -45,4 +45,10 @@ public class AddressController {
         addressService.delete(id);
         return Result.success();
     }
+
+    @GetMapping("/default")
+    public Result<AddressVO> getDefaultAddress() {
+        AddressVO addressVO = addressService.getDefaultAddress();
+        return Result.success(addressVO);
+    }
 }

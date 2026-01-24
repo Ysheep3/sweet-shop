@@ -1,7 +1,5 @@
 package com.sweet.api.dto;
 
-import lombok.Data;
-
 import java.math.BigDecimal;
 
 public class SetmealVO {

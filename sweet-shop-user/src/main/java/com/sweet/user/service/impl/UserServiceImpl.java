@@ -14,15 +14,17 @@ import com.sweet.user.entity.pojo.User;
 import com.sweet.user.entity.vo.UserLoginVO;
 import com.sweet.user.mapper.UserMapper;
 import com.sweet.user.service.UserService;
-import com.sweet.user.utils.AlipayClientFactory;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl  implements UserService {
     private final UserMapper userMapper;
-    private final AlipayClientFactory alipayClientFactory;
+    @Autowired
+    private AlipayClient alipayClient;
+    //private final AlipayClientFactory alipayClientFactory;
 
     @Override
     public UserLoginVO alipayLogin(UserLoginDTO requestParam) throws AlipayApiException {
@@ -37,7 +39,7 @@ public class UserServiceImpl  implements UserService {
         User user = userMapper.selectOne(query);
 
         if (user == null) {
-            AlipayClient alipayClient = alipayClientFactory.getAlipayClient();
+           // AlipayClient alipayClient = alipayClientFactory.getAlipayClient();
             AlipayUserInfoShareRequest request = new AlipayUserInfoShareRequest();
             AlipayUserInfoShareResponse userInfoResponse = alipayClient.execute(request, response.getAccessToken());
 
@@ -55,7 +57,6 @@ public class UserServiceImpl  implements UserService {
     }
 
     private AlipaySystemOauthTokenResponse getResponse(UserLoginDTO requestParam) throws AlipayApiException {
-        AlipayClient alipayClient = alipayClientFactory.getAlipayClient();
         AlipaySystemOauthTokenRequest request = new AlipaySystemOauthTokenRequest();
 
         request.setGrantType("authorization_code");

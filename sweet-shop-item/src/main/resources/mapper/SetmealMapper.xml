@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    namespace:名称空间
+-->
+<mapper namespace="com.sweet.item.mapper.SetmealMapper">
+
+    <select id="pageQuery"
+            resultType="com.sweet.item.entity.vo.SetmealVO">
+
+        select s.*, c.name as categoryName
+        from setmeal s
+        left join category c on c.id = s.category_id
+
+        <where>
+            <if test="setmeal.name != null and setmeal.name != ''">
+                and s.name like concat('%', #{setmeal.name}, '%')
+            </if>
+
+            <if test="setmeal.status != null">
+                and s.status = #{setmeal.status}
+            </if>
+
+            <if test="setmeal.categoryId != null">
+                and s.category_id = #{setmeal.categoryId}
+            </if>
+        </where>
+
+    </select>
+</mapper>

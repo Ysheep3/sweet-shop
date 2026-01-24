@@ -151,4 +151,53 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
             throw new ShoppingCartBusinessException(MessageConstant.DO_ERROR);
         }
     }
+
+    @Override
+    public List<ShoppingCartVO> listByIds(List<Long> ids) {
+        if (CollUtil.isEmpty(ids)) {
+            throw new ShoppingCartBusinessException(MessageConstant.DO_ERROR);
+        }
+        List<ShoppingCart> shoppingCarts = shoppingCartMapper.selectBatchIds(ids);
+
+        if (CollUtil.isEmpty(shoppingCarts)) {
+            return List.of();
+        }
+
+        List<ShoppingCartVO> shoppingCartVOS = new ArrayList<>();
+        for (ShoppingCart shoppingCart : shoppingCarts) {
+            ShoppingCartVO cartVO = BeanUtil.toBean(shoppingCart, ShoppingCartVO.class);
+            shoppingCartVOS.add(cartVO);
+        }
+
+        return shoppingCartVOS;
+    }
+
+    @Override
+    public void deleteByIds(List<Long> ids) {
+        if (CollUtil.isEmpty(ids)) {
+            throw new ShoppingCartBusinessException(MessageConstant.DO_ERROR);
+        }
+
+        int row = shoppingCartMapper.deleteBatchIds(ids);
+
+        if (row < 1) {
+            throw new ShoppingCartBusinessException(MessageConstant.DELETE_ERROR);
+        }
+
+    }
+
+    @Override
+    public void again(List<ShoppingCartVO> shoppingCartVOS) {
+        if (CollUtil.isEmpty(shoppingCartVOS)) {
+            throw new ShoppingCartBusinessException(MessageConstant.INSERT_ERROR);
+        }
+
+        List<ShoppingCart> shoppingCarts = new ArrayList<>();
+        for (ShoppingCartVO shoppingCartVO : shoppingCartVOS) {
+            ShoppingCart cart = BeanUtil.toBean(shoppingCartVO, ShoppingCart.class);
+            cart.setUserId(BaseContext.getCurrentId());
+        }
+
+        shoppingCartMapper.insertBatch(shoppingCarts);
+    }
 }

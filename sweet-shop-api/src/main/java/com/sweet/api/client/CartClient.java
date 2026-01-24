@@ -1,14 +1,21 @@
 package com.sweet.api.client;
 
+import com.sweet.api.dto.ShoppingCartVO;
+import com.sweet.common.result.Result;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.Collection;
+import java.util.List;
 
-@FeignClient(value = "sweet-shop-cart")
+@FeignClient(value = "sweet-shop-cart", path = "/shopping-cart")
 public interface CartClient {
 
-    @DeleteMapping("/carts")
-    void removeByItemIds(@RequestParam("ids") Collection<Long> ids);
+    @GetMapping("/listByIds")
+    Result<List<ShoppingCartVO>> listByIds(@RequestParam("ids") List<Long> ids);
+
+    @DeleteMapping("/deleteByIds")
+    void deleteByIds(@RequestParam("ids") List<Long> ids);
+
+    @PostMapping("/again")
+    void again(@RequestBody List<ShoppingCartVO> shoppingCartVOS);
 }
