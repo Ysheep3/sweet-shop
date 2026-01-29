@@ -16,11 +16,18 @@ public class MessageConstant {
     public static final String CLAIM_COUPON_ERROR = "优惠券领取失败";
     public static final String CLAIM_COUPON_LIMIT_ERROR = "优惠券领取次数已达上限";
     public static final String GET_COUPON_ERROR = "该优惠券不存在";
+    public static final String COUPON_UPDATE_ERROR_BY_START = "该优惠券启用中无法修改";
+    public static final String COUPON_UPDATE_STATUS_ERROR_BY_NOT_IN_TIME = "该优惠券启用中无法修改";
+    public static final String COUPON_DELETE_ERROR_BY_IN_TIME = "该优惠券启用中无法删除";
+    public static final String COUPON_CANNOT_USE = "条件不足无法使用该优惠券";
     public static final String GET_ADDRESS_DEFAULT_ERROR = "你没有设置默认地址";
     public static final String ORDERS_ID_IS_NULL = "订单号不能为空";
     public static final String ORDERS_IS_NULL = "订单不存在";
     public static final String ORDERS_STATUS_ERROR = "订单状态异常";
     public static final String ORDERS_PAY_ERROR = "订单支付失败";
+    public static final String ORDERS_AMOUNT_DIFF = "金额不一致，请稍后重试";
+    public static final String ORDERS_DISTANCE_ERROR = "超出配送范围";
+    public static final String ORDERS_HAS_BEEN_ACCEPTED = "订单已被接走了";
     public static final String EMPLOYEE_IS_NULL = "该员工不存在";
     public static final String DISH_IS_NULL = "该菜品不存在";
     public static final String SETMEAL_IS_NULL = "该套餐不存在";
@@ -35,6 +42,7 @@ public class MessageConstant {
     public static final String DELETE_ADDRESS_ERROR_BY_DEFAULT = "该地址是默认地址,无法删除";
     public static final String DELETE_CATEGORY_ERROR_BY_DISH = "分类关联了菜品,无法删除";
     public static final String USER_LOGIN_ERROR = "用户不存在";
+    public static final String USER_LOGIN_ERROR_FOR_USERNAME_OR_PWD = "账号或密码错误";
     public static final String FILE_UPLOAD_ERROR = "文件上传失败";
     public static final String ADDRESS_IS_NULL = "地址为空";
     public static final String SHOPPING_CART_IS_NULL = "购物车为空";

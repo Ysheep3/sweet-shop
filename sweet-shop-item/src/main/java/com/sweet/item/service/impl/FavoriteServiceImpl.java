@@ -55,6 +55,7 @@ public class FavoriteServiceImpl implements FavoriteService {
                     .price(requestParam.getPrice())
                     .dishId(requestParam.getProductId())
                     .userId(BaseContext.getCurrentId())
+                    .image(requestParam.getImage())
                     .build();
         } else {
             // 套餐
@@ -63,6 +64,7 @@ public class FavoriteServiceImpl implements FavoriteService {
                     .price(requestParam.getPrice())
                     .setmealId(requestParam.getProductId())
                     .userId(BaseContext.getCurrentId())
+                    .image(requestParam.getImage())
                     .build();
 
         }

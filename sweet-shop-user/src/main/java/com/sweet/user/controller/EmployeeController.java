@@ -10,6 +10,7 @@ import com.sweet.user.entity.dto.EmployeeLoginDTO;
 import com.sweet.user.entity.dto.EmployeePageDTO;
 import com.sweet.user.entity.pojo.Employee;
 import com.sweet.user.entity.vo.EmployeeLoginVO;
+import com.sweet.user.entity.vo.EmployeeVO;
 import com.sweet.user.service.EmployeeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,27 +48,25 @@ public class EmployeeController {
     }
 
     @PostMapping
-    public Result save(@RequestBody EmployeeDTO employeeDTO) {
+    public Result<Void> save(@RequestBody EmployeeDTO employeeDTO) {
         employeeService.save(employeeDTO);
         return Result.success();
     }
 
     @PostMapping("/status/{status}")
-    public Result startOrStop(@PathVariable Integer status, Long id) {
+    public Result<Void> startOrStop(@PathVariable Integer status, Long id) {
         employeeService.startOrStop(status, id);
         return Result.success();
     }
 
     @GetMapping("/{id}")
-    public Result<Employee> getById(@PathVariable Long id) {
-        Employee employee = employeeService.getById(id);
-        employee.setPassword("*****");
-
-        return Result.success(employee);
+    public Result<EmployeeVO> getById(@PathVariable Long id) {
+        EmployeeVO vo = employeeService.getById(id);
+        return Result.success(vo);
     }
 
     @PutMapping
-    public Result updateEmployee(@RequestBody EmployeeDTO employeeDTO) {
+    public Result<Void> updateEmployee(@RequestBody EmployeeDTO employeeDTO) {
         employeeService.updateEmployee(employeeDTO);
         return Result.success();
     }

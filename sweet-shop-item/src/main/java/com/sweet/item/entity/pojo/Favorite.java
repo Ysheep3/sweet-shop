@@ -28,6 +28,8 @@ public class Favorite implements Serializable {
 
     private String name;
 
+    private String image;
+
     private BigDecimal price;
 
     private LocalDateTime createTime;

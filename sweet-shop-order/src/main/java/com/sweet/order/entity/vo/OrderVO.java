@@ -32,6 +32,8 @@ public class OrderVO implements Serializable {
 
     private String address;
 
+    private String tableNo;
+
     private LocalDateTime orderTime;
 
     private LocalDateTime payTime;

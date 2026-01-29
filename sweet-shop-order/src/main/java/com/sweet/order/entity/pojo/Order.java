@@ -34,6 +34,11 @@ public class Order implements Serializable {
 
     private String address;
 
+    private String tableNo;
+
+    /** 经纬度 */
+    private String location;
+
     private LocalDateTime orderTime;
 
     private LocalDateTime payTime;

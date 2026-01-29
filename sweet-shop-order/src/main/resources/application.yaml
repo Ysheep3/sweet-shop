@@ -28,3 +28,5 @@ sweet:
     alipay-public-key: ${sweet.alipay.alipay-public-key}
     gateway-url: ${sweet.alipay.gateway-url}
     notify-url: ${sweet.alipay.notify-url}
+  amap:
+    key: ${sweet.amap.key}

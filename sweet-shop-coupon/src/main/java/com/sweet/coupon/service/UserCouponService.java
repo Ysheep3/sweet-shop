@@ -10,4 +10,10 @@ public interface UserCouponService {
     List<UserCouponVO> listByStatus(Integer status);
 
     void claimCoupon(UserCouponClaimDTO requestParam);
+
+    /**
+     * 使用优惠券
+     * @param id
+     */
+    void useCoupon(Long id);
 }

@@ -41,8 +41,5 @@ public class UserCouponDTO {
     /** 0 未使用，1 已使用，2 已过期 */
     private Integer status;
 
-    /** 标签 */
-    private String tags;
-
     private String name;
 }

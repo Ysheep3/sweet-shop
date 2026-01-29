@@ -5,9 +5,7 @@ import com.sweet.common.result.PageResult;
 import com.sweet.order.entity.dto.OrderDTO;
 import com.sweet.order.entity.dto.OrderPayDTO;
 import com.sweet.order.entity.dto.OrdersPageDTO;
-import com.sweet.order.entity.vo.OrderCountVO;
-import com.sweet.order.entity.vo.OrderPayVO;
-import com.sweet.order.entity.vo.OrderVO;
+import com.sweet.order.entity.vo.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -89,7 +87,7 @@ public interface OrderService {
      * 派单
      * @param id
      */
-    void delivery(Long id);
+//    void delivery(Long id);
 
     /**
      * 确认订单
@@ -124,4 +122,39 @@ public interface OrderService {
     SalesTop10ReportVO getTop10(OrderReportDTO orderReportDTO);
 
     OrderVO getByOrderNo(String orderNo);
+
+    /**
+     * 骑手获取订单
+     * @param status
+     * @return
+     */
+    List<OrderVO> getByStatus(Integer status);
+
+    /**
+     * 骑手接单
+     * @param orderNo
+     */
+    void accept(String orderNo);
+
+    OrderMapVO getOrder(String orderNo);
+
+    /**
+     * 骑手已送达
+     *
+     * @param orderNo
+     */
+    void completed(String orderNo);
+
+    /**
+     * 统计骑手完成订单数
+     * @return
+     */
+    OrderRiderCountVO countRiderComplete();
+
+    /**
+     * 统计骑手数据
+     * @param days
+     * @return
+     */
+    OrderRiderTrendVO trend(Integer days);
 }

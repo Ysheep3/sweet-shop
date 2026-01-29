@@ -47,10 +47,16 @@ public class Coupon implements Serializable {
     /** 标签 */
     private String tags;
 
+    private Integer validDay;
+
     /** 每人限领张数 */
     private Integer limitPerUser;
 
     private LocalDateTime startTime;
 
     private LocalDateTime endTime;
+
+    private LocalDateTime createTime;
+
+    private LocalDateTime updateTime;
 }

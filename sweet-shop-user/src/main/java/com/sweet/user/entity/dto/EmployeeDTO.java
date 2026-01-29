@@ -18,6 +18,9 @@ public class EmployeeDTO {
 
     private String phone;
 
-    private String sex;
+    private Integer sex;
 
+    private Integer role;
+
+    private String idNumber;
 }

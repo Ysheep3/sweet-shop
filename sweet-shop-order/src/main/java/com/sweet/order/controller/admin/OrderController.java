@@ -68,11 +68,11 @@ public class OrderController {
         return Result.success();
     }
 
-    @PutMapping("/delivery/{id}")
-    public Result<Void> delivery(@PathVariable Long id) {
-        orderService.delivery(id);
-        return Result.success();
-    }
+//    @PutMapping("/delivery/{id}")
+//    public Result<Void> delivery(@PathVariable Long id) {
+//        orderService.delivery(id);
+//        return Result.success();
+//    }
 
     @PutMapping("/complete/{id}")
     public Result<Void> complete(@PathVariable Long id) {

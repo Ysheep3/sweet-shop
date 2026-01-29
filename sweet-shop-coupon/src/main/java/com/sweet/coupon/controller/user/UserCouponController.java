@@ -27,4 +27,10 @@ public class UserCouponController {
         userCouponService.claimCoupon(requestParam);
         return Result.success();
     }
+
+    @PostMapping("/use/{id}")
+    public Result<Void> useCoupon(@PathVariable Long id) {
+        userCouponService.useCoupon(id);
+        return Result.success();
+    }
 }

@@ -20,6 +20,11 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>com.sweet.api</groupId>
+            <artifactId>sweet-shop-api</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
         <!-- poi 设置修改excel表-->
         <dependency>
             <groupId>org.apache.poi</groupId>

@@ -36,6 +36,8 @@ public class CouponVO implements Serializable {
     /** 1 有效，0 无效 */
     private Integer status;
 
+    private int stock;
+
     /** 标签 */
     private List<String> tags;
 

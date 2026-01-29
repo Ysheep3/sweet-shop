@@ -90,6 +90,8 @@ public class UserCouponServiceImpl implements UserCouponService {
                 userCouponUpd.setReceiveCount(1);
                 userCouponMapper.insert(userCouponUpd);
 
+                // TODO 延迟队列设置过期
+
             }
             return;
         }
@@ -101,5 +103,27 @@ public class UserCouponServiceImpl implements UserCouponService {
         userCoupon.setReceiveCount(1);
 
         userCouponMapper.insert(userCoupon);
+
+        // TODO 延迟队列设置过期
+    }
+
+    @Override
+    public void useCoupon(Long id) {
+        if (id == null) {
+            throw new CouponBusinessException(MessageConstant.DO_ERROR);
+        }
+
+        UserCoupon userCoupon = userCouponMapper.selectOne(
+                Wrappers.lambdaQuery(UserCoupon.class)
+                        .eq(UserCoupon::getId, id)
+                        .eq(UserCoupon::getUserId, BaseContext.getCurrentId())
+        );
+        if (userCoupon == null) {
+            throw new CouponBusinessException(MessageConstant.GET_COUPON_ERROR);
+        }
+        userCoupon.setStatus(UserCouponStatusEnum.USED.getCode());
+        userCoupon.setUseTime(LocalDateTime.now());
+
+        userCouponMapper.updateById(userCoupon);
     }
 }

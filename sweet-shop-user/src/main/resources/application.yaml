@@ -36,7 +36,7 @@ sweet:
 
     rider-secret-key: yyyyyyyyyyyyyyyyyyyyyyyyyyzzzzzzzzzzzzzzzzzzzzzbbbbbbbbbbbbbbbbbbbb
     rider-ttl: 18000000
-    rider-token-name: rider-token
+    rider-token-name: riderToken
 
     user-secret-key: yyyyyyyyyyyyyyyyyyyyyyyyyyyzzzzzzzzzzzzzzzzzzzzzbbbbbbbbbbbbbbbbbbbb
     user-ttl: 18000000

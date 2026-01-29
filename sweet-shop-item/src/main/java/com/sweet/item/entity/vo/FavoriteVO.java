@@ -25,5 +25,7 @@ public class FavoriteVO implements Serializable {
 
     private String name;
 
+    private String image;
+
     private BigDecimal price;
 }

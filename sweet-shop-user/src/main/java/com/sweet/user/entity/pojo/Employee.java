@@ -24,10 +24,14 @@ public class Employee {
     private String phone;
     /**  头像 */
     private String avatar;
+
+    private Integer sex;
     /**  角色 */
-    private String role;
+    private Integer role;
     /**  使用状态 1正常 0禁用 */
     private Integer status;
+
+    private String idNumber;
     /** 创建时间 */
     private LocalDateTime createTime;
     /** 更新时间 */

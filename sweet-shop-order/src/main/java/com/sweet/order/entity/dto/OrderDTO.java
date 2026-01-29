@@ -47,6 +47,9 @@ public class OrderDTO implements Serializable {
     /** 0 堂食，1 外卖 */
     private Integer orderType;
 
+    /** 桌号 */
+    private String tableNo;
+
     private Long deliveryEmployeeId;
 
     private String remark;
