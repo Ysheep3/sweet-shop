@@ -15,11 +15,14 @@ import com.sweet.coupon.entity.pojo.UserCoupon;
 import com.sweet.coupon.entity.vo.UserCouponVO;
 import com.sweet.coupon.mapper.CouponMapper;
 import com.sweet.coupon.mapper.UserCouponMapper;
+import com.sweet.coupon.mq.event.UserCouponExecuteStatusEvent;
+import com.sweet.coupon.mq.producer.UserCouponDelayExecuteEndProducer;
 import com.sweet.coupon.service.UserCouponService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +34,7 @@ public class UserCouponServiceImpl implements UserCouponService {
 
     private final UserCouponMapper userCouponMapper;
     private final CouponMapper couponMapper;
+    private final UserCouponDelayExecuteEndProducer endProducer;
 
     @Override
     public List<UserCouponVO> listByStatus(Integer status) {
@@ -90,9 +94,10 @@ public class UserCouponServiceImpl implements UserCouponService {
                 userCouponUpd.setReceiveCount(1);
                 userCouponMapper.insert(userCouponUpd);
 
-                // TODO 延迟队列设置过期
-
             }
+            // 延迟队列设置过期
+            sendDelayMessage(userCouponUpd);
+
             return;
         }
 
@@ -104,7 +109,26 @@ public class UserCouponServiceImpl implements UserCouponService {
 
         userCouponMapper.insert(userCoupon);
 
-        // TODO 延迟队列设置过期
+        // 延迟队列设置过期
+
+        sendDelayMessage(userCoupon);
+    }
+
+    private void sendDelayMessage(UserCoupon userCoupon) {
+        LocalDateTime endTime;
+        endTime = userCoupon.getEndTime();
+        long endTimeMills = endTime.atZone(ZoneId.of("Asia/Shanghai"))
+                .toInstant()
+                .toEpochMilli();
+
+        UserCouponExecuteStatusEvent event = UserCouponExecuteStatusEvent.builder()
+                .userCouponId(userCoupon.getId())
+                .userId(BaseContext.getCurrentId())
+                .couponId(userCoupon.getCouponId())
+                .deliverTime(endTimeMills)
+                .build();
+
+        endProducer.sendMessage(event);
     }
 
     @Override

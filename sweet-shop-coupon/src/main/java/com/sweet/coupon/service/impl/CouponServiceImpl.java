@@ -3,8 +3,6 @@ package com.sweet.coupon.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.poi.excel.sax.ElementName;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -21,25 +19,28 @@ import com.sweet.coupon.entity.vo.AdminCouponVO;
 import com.sweet.coupon.entity.vo.CouponVO;
 import com.sweet.coupon.mapper.CouponMapper;
 import com.sweet.coupon.mapper.UserCouponMapper;
+import com.sweet.coupon.mq.event.CouponExecuteStatusEvent;
+import com.sweet.coupon.mq.producer.CouponDelayExecuteStartProducer;
+import com.sweet.coupon.mq.producer.CouponDelayExecuteEndProducer;
 import com.sweet.coupon.service.CouponService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
-import static cn.hutool.poi.excel.sax.ElementName.row;
 
 @Service
 @RequiredArgsConstructor
 public class CouponServiceImpl implements CouponService {
     private final CouponMapper couponMapper;
     private final UserCouponMapper userCouponMapper;
+    private final CouponDelayExecuteEndProducer endProducer;
+    private final CouponDelayExecuteStartProducer startProducer;
 
     @Override
     public List<CouponVO> list() {
@@ -112,15 +113,43 @@ public class CouponServiceImpl implements CouponService {
         LocalDateTime startTime = couponDTO.getStartTime();
         LocalDateTime endTime = couponDTO.getEndTime();
         long validDay = ChronoUnit.DAYS.between(startTime, endTime);
+        validDay = Math.max(validDay, 1);
         coupon.setValidDay((int) validDay);
 
         int row = couponMapper.insert(coupon);
 
-        // TODO 延迟队列设置过期
-
         if (row < 1) {
             throw new CouponBusinessException(MessageConstant.INSERT_ERROR);
         }
+
+        // 延迟队列设置启用
+        if (Objects.equals(coupon.getStatus(), CouponStatusEnum.UNAVAILABLE.getCode())) {
+            long startTimeMilli = startTime.atZone(ZoneId.of("Asia/Shanghai"))
+                    .toInstant()
+                    .toEpochMilli();
+
+            CouponExecuteStatusEvent event = CouponExecuteStatusEvent
+                    .builder()
+                    .couponId(coupon.getId())
+                    .deliverTime(startTimeMilli)
+                    .build();
+
+            startProducer.sendMessage(event);
+        }
+
+        // 延迟队列设置过期
+        long endTimeMilli = endTime.atZone(ZoneId.of("Asia/Shanghai"))
+                .toInstant()
+                .toEpochMilli();
+
+        CouponExecuteStatusEvent event = CouponExecuteStatusEvent
+                .builder()
+                .couponId(coupon.getId())
+                .deliverTime(endTimeMilli)
+                .build();
+
+        endProducer.sendMessage(event);
+
     }
 
     @Override
@@ -169,14 +198,14 @@ public class CouponServiceImpl implements CouponService {
 //        }
 
         // 设置启用时间
+        LocalDateTime endTime = null;
         if (Objects.equals(status, CouponStatusEnum.AVAILABLE.getCode())) {
             coupon.setStartTime(now);
 
             if (coupon.getValidDay() != null) {
-                coupon.setEndTime(now.plusDays(coupon.getValidDay()));
+                endTime = now.plusDays(coupon.getValidDay());
+                coupon.setEndTime(endTime);
             }
-
-            // TODO 延迟队列设置过期
         }
 
 
@@ -187,6 +216,22 @@ public class CouponServiceImpl implements CouponService {
 
         if (row < 1) {
             throw new CouponBusinessException(MessageConstant.UPDATE_ERROR);
+        }
+
+        if (Objects.equals(status, CouponStatusEnum.AVAILABLE.getCode())) {
+            // 延迟队列设置过期
+            long endTimeMills = endTime.atZone(ZoneId.of("Asia/Shanghai"))
+                    .toInstant()
+                    .toEpochMilli();
+
+            CouponExecuteStatusEvent event = CouponExecuteStatusEvent
+                    .builder()
+                    .couponId(id)
+                    .deliverTime(endTimeMills)
+                    .build();
+
+            endProducer.sendMessage(event);
+
         }
     }
 

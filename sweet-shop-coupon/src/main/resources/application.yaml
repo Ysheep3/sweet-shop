@@ -11,6 +11,11 @@ spring:
   cloud:
     nacos:
       server-addr: ${sweet.cloud.nacos.server-addr}
+    httpclientfactories:
+      apache:
+        enabled: true
+      ok:
+        enabled: false
   data:
     redis:
       host: ${sweet.redis.host}
@@ -21,3 +26,11 @@ mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+rocketmq:
+  name-server: ${rocketmq.name-server}
+  producer:
+    group: ${rocketmq.producer.group}
+    send-message-timeout: ${rocketmq.producer.send-message-timeout} # 发送超时时间
+    retry-times-when-send-failed: ${rocketmq.producer.retry-times-when-send-failed} # 同步发送重试次数
+    retry-times-when-send-async-failed: ${rocketmq.producer.retry-times-when-send-failed} # 异步发送重试次数

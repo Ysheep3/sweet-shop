@@ -1,0 +1,57 @@
+package com.sweet.coupon.mq.producer;
+
+import com.sweet.coupon.mq.base.BaseSendExtendDTO;
+import com.sweet.coupon.mq.base.MessageWrapper;
+import com.sweet.coupon.mq.event.CouponExecuteStatusEvent;
+import com.sweet.coupon.mq.event.UserCouponExecuteStatusEvent;
+import org.apache.rocketmq.common.message.MessageConst;
+import org.apache.rocketmq.spring.core.RocketMQTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.stereotype.Component;
+
+import java.util.Objects;
+import java.util.UUID;
+
+/**
+ * 延迟推送 结束用户优惠卷 消息
+ */
+@Component
+public class UserCouponDelayExecuteEndProducer extends AbstractCommonSendProduceTemplate<UserCouponExecuteStatusEvent> {
+    private final ConfigurableEnvironment configurableEnvironment;
+
+    public UserCouponDelayExecuteEndProducer(
+            @Autowired RocketMQTemplate rocketMQTemplate,
+            @Autowired ConfigurableEnvironment configurableEnvironment) {
+
+        super(rocketMQTemplate);
+        this.configurableEnvironment = configurableEnvironment;
+    }
+
+    @Override
+    protected BaseSendExtendDTO buildSendExtendDTO(UserCouponExecuteStatusEvent messageSendEvent) {
+        return BaseSendExtendDTO.builder()
+                .eventName("结束用户优惠卷任务")
+                .keys(messageSendEvent.getUserCouponId().toString())
+                .topic(configurableEnvironment.resolvePlaceholders("sweet-shop-coupon-user-service_coupon-delay_end_topic"))
+                .delayTime(messageSendEvent.getDeliverTime())
+                .sentTimeout(10000L)
+                .build();
+    }
+
+    @Override
+    protected Message<?> buildMessage(UserCouponExecuteStatusEvent messageSendEvent, BaseSendExtendDTO requestParam) {
+        String keys = Objects.nonNull(requestParam.getKeys())
+                ? requestParam.getKeys()
+                : UUID.randomUUID().toString();
+
+        return MessageBuilder
+                //发送消息体，在消费者中接收
+                .withPayload(new MessageWrapper<>(keys, messageSendEvent))
+                .setHeader(MessageConst.PROPERTY_KEYS, keys)
+                .setHeader(MessageConst.PROPERTY_TAGS, requestParam.getTag())
+                .build();
+    }
+}
