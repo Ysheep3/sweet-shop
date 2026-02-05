@@ -3,7 +3,9 @@ package com.sweet.order.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.http.HttpException;
 import cn.hutool.json.JSONArray;
+import cn.hutool.json.JSONException;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson.JSON;
@@ -54,6 +56,7 @@ import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.DayOfWeek;
@@ -135,7 +138,6 @@ public class OrderServiceImpl implements OrderService {
         }
 
 
-
         // 计算金额是否正确
         calculate(requestParam);
 
@@ -184,26 +186,48 @@ public class OrderServiceImpl implements OrderService {
 
             Map<String, String> params = new HashMap<>();
             params.put("key", amapProperties.getKey());
-            params.put("origins", origin);        // lng,lat
+            params.put("origins", origin);
             params.put("destination", destination);
-            params.put("type", "0");              // 直线距离
+            params.put("type", "0");
 
             String result = HttpClientUtil.doGet(url, params);
+
+            if (StrUtil.isBlank(result)) {
+                throw new OrderBusinessException("距离计算失败：API返回空响应");
+            }
+
             JSONObject json = JSONUtil.parseObj(result);
+
+            // 检查高德 API 状态
+            if (!"1".equals(json.getStr("status"))) {
+                String errorInfo = json.getStr("info", "未知错误");
+                throw new OrderBusinessException("距离计算失败：" + errorInfo);
+            }
 
             JSONArray results = json.getJSONArray("results");
             if (CollUtil.isEmpty(results)) {
-                throw new OrderBusinessException("距离计算失败");
+                throw new OrderBusinessException("距离计算失败：未获取到距离信息");
             }
 
-            Integer distance = results.getJSONObject(0).getInt("distance");
+            JSONObject firstResult = results.getJSONObject(0);
+            Integer distance = firstResult.getInt("distance");
+
+            if (distance == null) {
+                throw new OrderBusinessException("距离计算失败：距离数据为空");
+            }
 
             if (distance > 5000) {
                 throw new OrderBusinessException(MessageConstant.ORDERS_DISTANCE_ERROR);
             }
+
+        } catch (JSONException e) {
+            log.error("距离计算数据解析异常，起点：{}，终点：{}", origin, destination, e);
+            throw new OrderBusinessException("距离计算失败：数据解析异常");
+        } catch (OrderBusinessException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("高德距离计算异常", e);
-            throw new OrderBusinessException("距离计算失败");
+            log.error("距离计算未知异常，起点：{}，终点：{}", origin, destination, e);
+            throw new OrderBusinessException("距离计算失败：系统异常");
         }
     }
 
@@ -344,6 +368,14 @@ public class OrderServiceImpl implements OrderService {
         order.setPayStatus(OrderPayStatusEnum.PAID.getCode());
 
         orderMapper.updateById(order);
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("type", 1);
+        map.put("orderId", order.getId().toString());
+        map.put("content", "订单号:" + order.getOrderNo());
+
+        String message = JSON.toJSONString(map);
+        webSocketServer.sendToAllClient(message);
     }
 
     /**
@@ -471,7 +503,7 @@ public class OrderServiceImpl implements OrderService {
         // 前端json格式接收
         Map<String, Object> map = new HashMap<>();
         map.put("type", 2);
-        map.put("orderId", id);
+        map.put("orderId", id.toString());
         map.put("content", "订单号为" + orderNo + "的订单催单了!");
 
         String message = JSON.toJSONString(map);

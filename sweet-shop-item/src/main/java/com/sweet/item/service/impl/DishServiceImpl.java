@@ -7,6 +7,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.db.Db;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sweet.api.dto.DishOverViesVO;
@@ -30,11 +31,13 @@ import com.sweet.item.mapper.SetmealDishMapper;
 import com.sweet.item.mapper.SetmealMapper;
 import com.sweet.item.service.DishService;
 import lombok.RequiredArgsConstructor;
+import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -43,6 +46,8 @@ public class DishServiceImpl implements DishService {
     private final DishMapper dishMapper;
     private final SetmealMapper setmealMapper;
     private final SetmealDishMapper setmealDishMapper;
+    private final RedissonClient redissonClient;
+    private final static String KEY = "dish::";
 
     @Override
     public List<DishVO> getDishByCategoryId(Long categoryId) {
@@ -197,6 +202,8 @@ public class DishServiceImpl implements DishService {
         Dish dish = BeanUtil.toBean(dishDTO, Dish.class);
         dish.setCreateUser(BaseContext.getCurrentId());
         dish.setUpdateUser(BaseContext.getCurrentId());
+        dish.setStatus(ItemStatusEnum.DISABLED.getCode());
+        dish.setType(1); // 1 -菜品
 
         dishMapper.insert(dish);
     }
@@ -208,6 +215,7 @@ public class DishServiceImpl implements DishService {
      */
     @Transactional
     public void deleteBatchByIds(List<Long> ids) {
+        List<Long> categoryIds = Collections.synchronizedList(new ArrayList<>());
         for (Long id : ids) {
             SetmealDish dish = setmealDishMapper.selectOne(
                     Wrappers.lambdaQuery(SetmealDish.class)
@@ -222,10 +230,16 @@ public class DishServiceImpl implements DishService {
                     Wrappers.lambdaQuery(Dish.class)
                             .eq(Dish::getId, id)
             );
+            categoryIds.add(dish2.getCategoryId());
             if (dish2.getStatus().equals(ItemStatusEnum.ENABLED.getCode())) {
                 throw new DeleteNotAllowException(dish2.getName() + MessageConstant.DELETE_DISH_ERROR_BY_START);
             }
 
+        }
+
+        categoryIds.add(0L);
+        for (Long categoryId : categoryIds) {
+            redissonClient.getBucket(KEY + categoryId).delete();
         }
 
         dishMapper.deleteBatchIds(ids);
@@ -237,18 +251,12 @@ public class DishServiceImpl implements DishService {
      * @param dishDTO
      */
     @Transactional
-    public void updateDishWithFlavor(DishDTO dishDTO) {
+    public void updateDish(DishDTO dishDTO) {
         Dish dish = BeanUtil.copyProperties(dishDTO, Dish.class);
         dish.setUpdateUser(BaseContext.getCurrentId());
         dish.setUpdateTime(LocalDateTime.now());
         dishMapper.updateById(dish);
 
-        // 先删掉所有口味, 再插入新的
-//        LambdaQueryWrapper<DishFlavor> wrapper = new LambdaQueryWrapper<>();
-//        wrapper.eq(DishFlavor::getDishId, dish.getId());
-//        dishFlavorMapper.delete(wrapper);
-//
-//        dishFlavorMapper.insert(dishDTO.getFlavors());
     }
 
     @Override
@@ -266,6 +274,8 @@ public class DishServiceImpl implements DishService {
         dish.setStatus(status);
         dish.setUpdateTime(LocalDateTime.now());
         dish.setUpdateUser(BaseContext.getCurrentId());
+        redissonClient.getBucket(KEY + 0).delete();
+        redissonClient.getBucket(KEY + dish.getCategoryId()).delete();
         dishMapper.updateById(dish);
     }
 

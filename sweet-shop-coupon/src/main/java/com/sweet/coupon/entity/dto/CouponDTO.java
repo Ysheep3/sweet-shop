@@ -1,5 +1,6 @@
 package com.sweet.coupon.entity.dto;
 
+import com.alibaba.fastjson.JSON;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,6 +17,8 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 public class CouponDTO  {
+    private Long id;
+
     private String name;
 
     /** 1 满减券，2 折扣券，3 无门槛 */

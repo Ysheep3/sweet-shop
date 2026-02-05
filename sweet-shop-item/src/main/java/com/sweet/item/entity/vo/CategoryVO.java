@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CategoryVO implements Serializable {
+    private static final long serialVersionUID = 1L;
     /** 分类id */
     private String  id;
 

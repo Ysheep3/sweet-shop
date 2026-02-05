@@ -1,6 +1,7 @@
 package com.sweet.coupon.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -10,7 +11,9 @@ import com.sweet.common.constant.MessageConstant;
 import com.sweet.common.context.BaseContext;
 import com.sweet.common.exception.CouponBusinessException;
 import com.sweet.common.result.PageResult;
+import com.sweet.coupon.common.CouponRedisKey;
 import com.sweet.coupon.common.CouponStatusEnum;
+import com.sweet.coupon.common.CouponTypeEnum;
 import com.sweet.coupon.entity.dto.CouponDTO;
 import com.sweet.coupon.entity.dto.CouponPageDTO;
 import com.sweet.coupon.entity.pojo.Coupon;
@@ -20,18 +23,25 @@ import com.sweet.coupon.entity.vo.CouponVO;
 import com.sweet.coupon.mapper.CouponMapper;
 import com.sweet.coupon.mapper.UserCouponMapper;
 import com.sweet.coupon.mq.event.CouponExecuteStatusEvent;
-import com.sweet.coupon.mq.producer.CouponDelayExecuteStartProducer;
 import com.sweet.coupon.mq.producer.CouponDelayExecuteEndProducer;
+import com.sweet.coupon.mq.producer.CouponDelayExecuteStartProducer;
 import com.sweet.coupon.service.CouponService;
 import lombok.RequiredArgsConstructor;
+import org.redisson.api.RMap;
+import org.redisson.api.RSet;
+import org.redisson.api.RedissonClient;
+import org.springframework.data.redis.core.RedisCallback;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -41,22 +51,20 @@ public class CouponServiceImpl implements CouponService {
     private final UserCouponMapper userCouponMapper;
     private final CouponDelayExecuteEndProducer endProducer;
     private final CouponDelayExecuteStartProducer startProducer;
+    private final RedissonClient redissonClient;
+    private final StringRedisTemplate stringRedisTemplate;
 
     @Override
     public List<CouponVO> list() {
+        // 1️⃣ Redis 中的可用优惠券 ID
+        Set<String> couponIdSet = stringRedisTemplate.opsForSet()
+                .members(CouponRedisKey.COUPON_ENABLE_KEY);
 
-        List<Coupon> coupons = couponMapper.selectList(
-                Wrappers.lambdaQuery(Coupon.class)
-                        .eq(Coupon::getStatus, CouponStatusEnum.AVAILABLE.getCode())
-                        .le(Coupon::getStartTime, LocalDateTime.now())
-                        .ge(Coupon::getEndTime, LocalDateTime.now())
-        );
-
-        if (CollUtil.isEmpty(coupons)) {
+        if (CollUtil.isEmpty(couponIdSet)) {
             return List.of();
         }
 
-        // 查询用户已领取的优惠券
+        // 2️⃣ 查询用户已领取次数
         List<UserCoupon> userCoupons = userCouponMapper.selectList(
                 Wrappers.lambdaQuery(UserCoupon.class)
                         .eq(UserCoupon::getUserId, BaseContext.getCurrentId())
@@ -68,22 +76,105 @@ public class CouponServiceImpl implements CouponService {
                         Collectors.summingInt(UserCoupon::getReceiveCount)
                 ));
 
+        // 3️⃣ pipeline 批量 HGETALL
+        List<Object> couponMaps = stringRedisTemplate.executePipelined(
+                (RedisCallback<Object>) connection -> {
+                    for (String couponIdStr : couponIdSet) {
+                        String couponKey = String.format(
+                                CouponRedisKey.COUPON_KEY,
+                                couponIdStr
+                        );
+                        connection.hGetAll(couponKey.getBytes());
+                    }
+                    return null;
+                }
+        );
 
-        // 过滤已领满的优惠券
-        coupons = coupons.stream()
-                .filter(coupon -> {
-                    Integer receiveCount = receiveCountMap.get(coupon.getId());
-                    return receiveCount == null
-                            || receiveCount < coupon.getLimitPerUser();
-                })
-                .toList();
+        Iterator<String> idIterator = couponIdSet.iterator();
+        List<CouponVO> result = new ArrayList<>();
 
-        return coupons.stream().map(coupon -> {
+        // 4️⃣ 组装结果
+        for (Object obj : couponMaps) {
+            String couponIdStr = idIterator.next();
+            Long couponId = Long.valueOf(couponIdStr);
+
+            @SuppressWarnings("unchecked")
+            Map<String, String> rawMap = (Map<String, String>) obj;
+
+            // 已过期，被 EXPIREAT 清掉
+            if (CollUtil.isEmpty(rawMap)) {
+                continue;
+            }
+
+            Map<String, Object> couponMap = new HashMap<>();
+            rawMap.forEach((k, v) ->
+                    couponMap.put(new String(k), new String(v))
+            );
+
+            Coupon coupon = BeanUtil.fillBeanWithMap(
+                    couponMap,
+                    new Coupon(),
+                    false
+            );
+
+            // 5️⃣ 已领满过滤
+            Integer receiveCount = receiveCountMap.get(couponId);
+            if (receiveCount != null
+                    && receiveCount >= coupon.getLimitPerUser()) {
+                continue;
+            }
+
             CouponVO couponVO = BeanUtil.toBean(coupon, CouponVO.class);
             couponVO.setTags(StrUtil.splitTrim(coupon.getTags(), ","));
-            return couponVO;
-        }).toList();
+            result.add(couponVO);
+        }
+
+        return result;
     }
+
+
+//    @Override
+//    public List<CouponVO> list() {
+//
+//        List<Coupon> coupons = couponMapper.selectList(
+//                Wrappers.lambdaQuery(Coupon.class)
+//                        .eq(Coupon::getStatus, CouponStatusEnum.AVAILABLE.getCode())
+//                        .le(Coupon::getStartTime, LocalDateTime.now())
+//                        .ge(Coupon::getEndTime, LocalDateTime.now())
+//        );
+//
+//        if (CollUtil.isEmpty(coupons)) {
+//            return List.of();
+//        }
+//
+//        // 查询用户已领取的优惠券
+//        List<UserCoupon> userCoupons = userCouponMapper.selectList(
+//                Wrappers.lambdaQuery(UserCoupon.class)
+//                        .eq(UserCoupon::getUserId, BaseContext.getCurrentId())
+//        );
+//
+//        Map<Long, Integer> receiveCountMap = userCoupons.stream()
+//                .collect(Collectors.groupingBy(
+//                        UserCoupon::getCouponId,
+//                        Collectors.summingInt(UserCoupon::getReceiveCount)
+//                ));
+//
+//
+//        // 过滤已领满的优惠券
+//        coupons = coupons.stream()
+//                .filter(coupon -> {
+//                    Integer receiveCount = receiveCountMap.get(coupon.getId());
+//                    return receiveCount == null
+//                            || receiveCount < coupon.getLimitPerUser();
+//                })
+//                .toList();
+//
+//        return coupons.stream().map(coupon -> {
+//            CouponVO couponVO = BeanUtil.toBean(coupon, CouponVO.class);
+//            couponVO.setTags(StrUtil.splitTrim(coupon.getTags(), ","));
+//            return couponVO;
+//        }).toList();
+//    }
 
     @Override
     public PageResult page(CouponPageDTO couponPageDTO) {
@@ -99,6 +190,60 @@ public class CouponServiceImpl implements CouponService {
 
     @Override
     public void create(CouponDTO couponDTO) {
+        if (couponDTO.getName() == null) {
+            throw new CouponBusinessException("优惠券名称不能为空");
+        }
+        LocalDateTime now = LocalDateTime.now();
+        // 开始时间不能早于当前时间
+        if (couponDTO.getStartTime() != null && couponDTO.getStartTime().isBefore(now)) {
+            throw new CouponBusinessException(MessageConstant.COUPON_UPDATE_START_TIME_ERROR);
+        }
+
+        // 结束时间不能早于当前时间
+        if (couponDTO.getEndTime() != null && couponDTO.getEndTime().isBefore(now)) {
+            throw new CouponBusinessException(MessageConstant.COUPON_UPDATE_END_TIME_ERROR);
+        }
+
+        if (couponDTO.getLimitPerUser() == null) {
+            throw new CouponBusinessException("每人限领不能为空");
+        }
+
+        if (couponDTO.getStock() == null) {
+            throw new CouponBusinessException("库存不能为空");
+        }
+
+        if (couponDTO.getReduceAmount() == null) {
+            throw new CouponBusinessException("减免金额不能为空");
+        }
+
+        if (couponDTO.getReduceAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new CouponBusinessException("减免金额必须大于0");
+        }
+
+        if (couponDTO.getType().equals(CouponTypeEnum.FULL_REDUCE.getCode())) {
+            if (couponDTO.getConditionAmount() == null) {
+                throw new CouponBusinessException("满减券的满足条件金额和减免金额不能为空");
+            }
+
+            if (couponDTO.getConditionAmount().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new CouponBusinessException("满足条件金额必须大于0");
+            }
+
+            if (couponDTO.getReduceAmount().compareTo(couponDTO.getConditionAmount()) >= 0) {
+                throw new CouponBusinessException("减免金额必须小于满足条件金额");
+            }
+        }
+
+        if (couponDTO.getType().equals(CouponTypeEnum.DISCOUNT.getCode())) {
+            if (couponDTO.getDiscount() == null) {
+                throw new CouponBusinessException("折扣券的折扣不能为空");
+            }
+
+            if (couponDTO.getDiscount() <= 0 || couponDTO.getDiscount() >= 10) {
+                throw new CouponBusinessException("折扣必须在0~10之间");
+            }
+        }
+
         Coupon coupon = BeanUtil.toBean(couponDTO, Coupon.class);
         String tags = StrUtil.join(",", couponDTO.getTags());
         coupon.setTags(tags);
@@ -107,7 +252,7 @@ public class CouponServiceImpl implements CouponService {
         }
 
         if (Objects.equals(couponDTO.getStatus(), CouponStatusEnum.AVAILABLE.getCode())) {
-            coupon.setStartTime(LocalDateTime.now());
+            coupon.setStartTime(now.withNano(0));
         }
 
         LocalDateTime startTime = couponDTO.getStartTime();
@@ -122,7 +267,56 @@ public class CouponServiceImpl implements CouponService {
             throw new CouponBusinessException(MessageConstant.INSERT_ERROR);
         }
 
-        // 延迟队列设置启用
+        // 存入缓存
+        if (couponDTO.getStatus().equals(CouponStatusEnum.AVAILABLE.getCode())) {
+            String couponKey = String.format(CouponRedisKey.COUPON_KEY, coupon.getId());
+            Map<String, Object> couponMap = BeanUtil.beanToMap(coupon, false, true);
+            Map<String, String> actrualCouponMap = couponMap.entrySet().stream()
+                    .collect(Collectors.toMap(Map.Entry::getKey,
+                            entry -> entry.getValue() != null ? entry.getValue().toString() : ""
+                    ));
+
+            List<String> args = new ArrayList<>(actrualCouponMap.size() * 2 + 1);
+            actrualCouponMap.forEach((key, value) -> {
+                args.add(key);
+                args.add(value);
+            });
+
+            long endTimeMills = endTime.atZone(ZoneId.of("Asia/Shanghai")).toInstant().toEpochMilli();
+            String endTimeStr = String.valueOf(endTimeMills / 1000);
+            args.add(endTimeStr);
+            List<String> keys = Collections.singletonList(couponKey);
+
+            String luaScript = "redis.call('HMSET', KEYS[1], unpack(ARGV, 1, #ARGV -1))" +
+                    "redis.call('EXPIREAT', KEYS[1], ARGV[#ARGV])";
+
+            stringRedisTemplate.execute(
+                    new DefaultRedisScript<>(luaScript, Long.class),
+                    keys,
+                    args.toArray()
+            );
+        }
+        // 加入“可查询索引”
+        stringRedisTemplate.opsForSet().add(CouponRedisKey.COUPON_ENABLE_KEY, coupon.getId().toString());
+
+//        RMap<String, Object> redisMap = redissonClient.getMap(couponKey);
+//        Map<String, Object> filedMap = BeanUtil.beanToMap(
+//                coupon,
+//                new HashMap<>(),
+//                CopyOptions.create()
+//                        .setIgnoreNullValue(true)
+//        );
+//        if (couponDTO.getStatus().equals(CouponStatusEnum.AVAILABLE.getCode())) {
+//            redisMap.putAll(filedMap);
+//            long expireSeconds = Duration.between(coupon.getStartTime(), endTime).getSeconds();
+//            if (expireSeconds > 0) {
+//                redisMap.expire(expireSeconds, TimeUnit.SECONDS);
+//            }
+//            // 加入“可查询索引”
+//            redissonClient.getSet(CouponRedisKey.COUPON_ENABLE_KEY).add(coupon.getId());
+//        }
+
+        // 延迟队列设置启用 存入缓存并设置过期时间
         if (Objects.equals(coupon.getStatus(), CouponStatusEnum.UNAVAILABLE.getCode())) {
             long startTimeMilli = startTime.atZone(ZoneId.of("Asia/Shanghai"))
                     .toInstant()
@@ -154,6 +348,11 @@ public class CouponServiceImpl implements CouponService {
 
     @Override
     public void update(CouponDTO couponDTO) {
+        Coupon oldCoupon = couponMapper.selectById(couponDTO.getId());
+        if (oldCoupon == null) {
+            throw new CouponBusinessException(MessageConstant.GET_COUPON_ERROR);
+        }
+
         Coupon coupon = BeanUtil.toBean(couponDTO, Coupon.class);
 
         if (Objects.equals(coupon.getStatus(), CouponStatusEnum.AVAILABLE.getCode())) {
@@ -170,6 +369,16 @@ public class CouponServiceImpl implements CouponService {
             throw new CouponBusinessException(MessageConstant.COUPON_UPDATE_STATUS_ERROR_BY_NOT_IN_TIME);
         }
 
+        // 新的开始时间不能早于当前时间
+        if (coupon.getStartTime() != null && coupon.getStartTime().isBefore(now)) {
+            throw new CouponBusinessException(MessageConstant.COUPON_UPDATE_START_TIME_ERROR);
+        }
+
+        // 新的结束时间不能早于当前时间
+        if (coupon.getEndTime() != null && coupon.getEndTime().isBefore(now)) {
+            throw new CouponBusinessException(MessageConstant.COUPON_UPDATE_END_TIME_ERROR);
+        }
+
         String tags = StrUtil.join(",", couponDTO.getTags());
         coupon.setTags(tags);
 
@@ -177,6 +386,45 @@ public class CouponServiceImpl implements CouponService {
 
         if (row < 1) {
             throw new CouponBusinessException(MessageConstant.UPDATE_ERROR);
+        }
+
+        Long couponId = coupon.getId();
+
+        boolean startTimeChanged =
+                coupon.getStartTime() != null
+                        && !coupon.getStartTime().isEqual(oldCoupon.getStartTime());
+
+        boolean endTimeChanged =
+                coupon.getEndTime() != null
+                        && !coupon.getEndTime().isEqual(oldCoupon.getEndTime());
+
+        // 重新发送消息
+        if (startTimeChanged) {
+            long startMillis = coupon.getStartTime()
+                    .atZone(ZoneId.of("Asia/Shanghai"))
+                    .toInstant()
+                    .toEpochMilli();
+
+            startProducer.sendMessage(
+                    CouponExecuteStatusEvent.builder()
+                            .couponId(couponId)
+                            .deliverTime(startMillis)
+                            .build()
+            );
+        }
+
+        if (endTimeChanged) {
+            long endMillis = coupon.getEndTime()
+                    .atZone(ZoneId.of("Asia/Shanghai"))
+                    .toInstant()
+                    .toEpochMilli();
+
+            endProducer.sendMessage(
+                    CouponExecuteStatusEvent.builder()
+                            .couponId(couponId)
+                            .deliverTime(endMillis)
+                            .build()
+            );
         }
     }
 
@@ -200,11 +448,11 @@ public class CouponServiceImpl implements CouponService {
         // 设置启用时间
         LocalDateTime endTime = null;
         if (Objects.equals(status, CouponStatusEnum.AVAILABLE.getCode())) {
-            coupon.setStartTime(now);
+            coupon.setStartTime(now.withNano(0));
 
             if (coupon.getValidDay() != null) {
                 endTime = now.plusDays(coupon.getValidDay());
-                coupon.setEndTime(endTime);
+                coupon.setEndTime(endTime.withNano(0));
             }
         }
 
@@ -218,12 +466,38 @@ public class CouponServiceImpl implements CouponService {
             throw new CouponBusinessException(MessageConstant.UPDATE_ERROR);
         }
 
+        String couponKey = String.format(CouponRedisKey.COUPON_KEY, coupon.getId());
+        Map<String, Object> couponMap = BeanUtil.beanToMap(coupon, false, true);
+        Map<String, String> actrualCouponMap = couponMap.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey,
+                        entry -> entry.getValue() != null ? entry.getValue().toString() : ""
+                ));
+
+        List<String> args = new ArrayList<>(actrualCouponMap.size() * 2 + 1);
+        actrualCouponMap.forEach((key, value) -> {
+            args.add(key);
+            args.add(value);
+        });
+
+        long endTimeMills = endTime.atZone(ZoneId.of("Asia/Shanghai")).toInstant().toEpochMilli();
+        String endTimeStr = String.valueOf(endTimeMills / 1000);
+        args.add(endTimeStr);
+        List<String> keys = Collections.singletonList(couponKey);
+
+        String luaScript = "redis.call('HMSET', KEYS[1], unpack(ARGV, 1, #ARGV -1))" +
+                "redis.call('EXPIREAT', KEYS[1], ARGV[#ARGV])";
+
+        stringRedisTemplate.execute(
+                new DefaultRedisScript<>(luaScript, Long.class),
+                keys,
+                args.toArray()
+        );
+        // 加入“可查询索引”
+        stringRedisTemplate.opsForSet().add(CouponRedisKey.COUPON_ENABLE_KEY, id.toString());
+
+
         if (Objects.equals(status, CouponStatusEnum.AVAILABLE.getCode())) {
             // 延迟队列设置过期
-            long endTimeMills = endTime.atZone(ZoneId.of("Asia/Shanghai"))
-                    .toInstant()
-                    .toEpochMilli();
-
             CouponExecuteStatusEvent event = CouponExecuteStatusEvent
                     .builder()
                     .couponId(id)

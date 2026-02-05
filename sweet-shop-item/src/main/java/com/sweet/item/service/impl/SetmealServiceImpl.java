@@ -24,11 +24,13 @@ import com.sweet.item.mapper.SetmealDishMapper;
 import com.sweet.item.mapper.SetmealMapper;
 import com.sweet.item.service.SetmealService;
 import lombok.RequiredArgsConstructor;
+import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -36,6 +38,8 @@ import java.util.List;
 public class SetmealServiceImpl implements SetmealService {
     private final SetmealMapper setmealMapper;
     private final SetmealDishMapper setmealDishMapper;
+    private final RedissonClient redissonClient;
+    private final static String KEY = "setmeal::";
 
     @Override
     public List<SetmealVO> getSetmealByCategoryId(Long categoryId) {
@@ -127,6 +131,8 @@ public class SetmealServiceImpl implements SetmealService {
         Setmeal setmeal = BeanUtil.copyProperties(setmealDTO, Setmeal.class);
         setmeal.setCreateUser(BaseContext.getCurrentId());
         setmeal.setUpdateUser(BaseContext.getCurrentId());
+        setmeal.setStatus(ItemStatusEnum.DISABLED.getCode());
+        setmeal.setType(2); // 2 -套餐
 
         setmealMapper.insert(setmeal);
         Long setmealId = setmeal.getId();
@@ -146,14 +152,20 @@ public class SetmealServiceImpl implements SetmealService {
      */
     @Transactional
     public void deleteBatchByIds(List<Long> ids) {
+        List<Long> categoryIds = Collections.synchronizedList(new ArrayList<>());
         for (Long id : ids) {
             Setmeal setmeal = setmealMapper.selectById(id);
+            categoryIds.add(setmeal.getCategoryId());
             // 判断是否起售中
             if (setmeal.getStatus().equals(ItemStatusEnum.ENABLED.getCode())) {
                 throw new DeleteNotAllowException(setmeal.getName()+MessageConstant.DELETE_SETMEAL_ERROR_BY_START);
             }
         }
 
+        categoryIds.add(0L);
+        for (Long categoryId : categoryIds) {
+            redissonClient.getBucket(KEY + categoryId).delete();
+        }
         setmealMapper.deleteBatchIds(ids);
         setmealDishMapper.deleteBySetmealIds(ids);
     }
@@ -193,6 +205,8 @@ public class SetmealServiceImpl implements SetmealService {
         setmeal.setUpdateTime(LocalDateTime.now());
         setmeal.setUpdateUser(BaseContext.getCurrentId());
 
+        redissonClient.getBucket(KEY + setmeal.getCategoryId()).delete();
+        redissonClient.getBucket(KEY + 0).delete();
         setmealMapper.updateById(setmeal);
     }
 

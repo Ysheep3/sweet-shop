@@ -11,6 +11,7 @@ import com.sweet.common.exception.BaseException;
 import com.sweet.common.exception.LoginException;
 import com.sweet.common.result.PageResult;
 import com.sweet.user.common.EmployeeRoleEnum;
+import com.sweet.user.common.EmployeeStatusEnum;
 import com.sweet.user.entity.dto.EmployeeDTO;
 import com.sweet.user.entity.dto.EmployeeLoginDTO;
 import com.sweet.user.entity.dto.EmployeePageDTO;
@@ -140,7 +141,8 @@ public class EmployeeServiceImpl implements EmployeeService {
         LambdaQueryWrapper<Employee> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Employee::getUsername, employeeLoginDTO.getUsername())
                 .eq(Employee::getPassword, password)
-                .eq(Employee::getRole, EmployeeRoleEnum.Rider.getCode());
+                .eq(Employee::getRole, EmployeeRoleEnum.Rider.getCode())
+                .eq(Employee::getStatus, EmployeeStatusEnum.ENABLE.getCode());
 
 
         Employee employee = employeeMapper.selectOne(wrapper);

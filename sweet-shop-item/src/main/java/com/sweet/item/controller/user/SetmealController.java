@@ -1,8 +1,12 @@
 package com.sweet.item.controller.user;
 
+import cn.hutool.core.collection.CollUtil;
 import com.sweet.item.entity.vo.SetmealVO;
 import com.sweet.item.service.SetmealService;
 import lombok.RequiredArgsConstructor;
+import org.redisson.api.RBucket;
+import org.redisson.api.RedissonClient;
+import org.redisson.codec.JsonJacksonCodec;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,10 +20,18 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SetmealController {
     private final SetmealService setmealService;
+    private final RedissonClient redissonClient;
+    private final JsonJacksonCodec redissonItemJsonCodec;
+    private final static String KEY = "setmeal::";
 
     @GetMapping("/list")
     public Result<List<SetmealVO>> list(Long categoryId) {
-        List<SetmealVO> setmealVOList = setmealService.getSetmealByCategoryId(categoryId);
+        RBucket<List<SetmealVO>> bucket = redissonClient.getBucket(KEY + categoryId, redissonItemJsonCodec);
+        List<SetmealVO> setmealVOList = bucket.get();
+        if (CollUtil.isEmpty(setmealVOList)) {
+            setmealVOList = setmealService.getSetmealByCategoryId(categoryId);
+            bucket.set(setmealVOList);
+        }
         return Result.success(setmealVOList);
     }
 

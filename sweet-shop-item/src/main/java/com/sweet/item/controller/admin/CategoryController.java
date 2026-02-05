@@ -7,6 +7,7 @@ import com.sweet.item.entity.dto.CategoryPageQueryDTO;
 import com.sweet.item.entity.pojo.Category;
 import com.sweet.item.service.CategoryService;
 import lombok.RequiredArgsConstructor;
+import org.redisson.api.RedissonClient;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,9 +25,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CategoryController {
     private final CategoryService categoryService;
+    private final RedissonClient redissonClient;
+    private final static String KEY = "category";
 
-    //private RedisTemplate<String, Object> redisTemplate;
-    private static final String KEY = "categoryCache";
     @GetMapping("/page")
     public Result<PageResult> page(CategoryPageQueryDTO categoryPageDTO) {
         PageResult pageResult = categoryService.pageQuery(categoryPageDTO);
@@ -35,28 +36,28 @@ public class CategoryController {
 
     @PostMapping
     public Result<Void> save(@RequestBody CategoryDTO categoryDTO) {
-        //redisTemplate.delete(KEY);
+        redissonClient.getBucket(KEY).delete();
         categoryService.save(categoryDTO);
         return Result.success();
     }
 
     @PostMapping("/status/{status}")
     public Result<Void> startOrStop(@PathVariable Integer status, Long id) {
-        //redisTemplate.delete(KEY);
+        redissonClient.getBucket(KEY).delete();
         categoryService.startOrStop(status, id);
         return Result.success();
     }
 
     @PutMapping
     public Result<Void> update(@RequestBody CategoryDTO categoryDTO) {
-        //redisTemplate.delete(KEY);
+        redissonClient.getBucket(KEY).delete();
         categoryService.update(categoryDTO);
         return Result.success();
     }
 
     @DeleteMapping
     public Result<Void> delete(Long id) {
-        //redisTemplate.delete(KEY);
+        redissonClient.getBucket(KEY).delete();
         categoryService.delete(id);
         return Result.success();
     }

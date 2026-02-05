@@ -1,5 +1,6 @@
 package com.sweet.coupon.entity.pojo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -35,12 +36,6 @@ public class Coupon implements Serializable {
     /** 折扣 */
     private Double discount;
 
-    /** 发放总量 */
-    private Integer totalQuantity;
-
-    /** 使用数量 */
-    private Integer usedQuantity;
-
     /** 1 有效，0 无效 */
     private Integer status;
 
@@ -52,11 +47,15 @@ public class Coupon implements Serializable {
     /** 每人限领张数 */
     private Integer limitPerUser;
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime startTime;
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime endTime;
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createTime;
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updateTime;
 }

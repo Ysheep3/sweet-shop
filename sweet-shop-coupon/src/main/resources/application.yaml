@@ -1,6 +1,8 @@
 spring:
   profiles:
     active: dev
+  jackson:
+    time-zone: Asia/Shanghai
   application:
     name: sweet-shop-coupon
   datasource:

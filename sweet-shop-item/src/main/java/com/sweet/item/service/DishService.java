@@ -52,7 +52,7 @@ public interface DishService {
      *
      * @param dishDTO
      */
-    void updateDishWithFlavor(DishDTO dishDTO);
+    void updateDish(DishDTO dishDTO);
 
     /**
      * 起售停售

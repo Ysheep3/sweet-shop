@@ -20,6 +20,11 @@ public class MessageConstant {
     public static final String COUPON_UPDATE_STATUS_ERROR_BY_NOT_IN_TIME = "该优惠券启用中无法修改";
     public static final String COUPON_DELETE_ERROR_BY_IN_TIME = "该优惠券启用中无法删除";
     public static final String COUPON_CANNOT_USE = "条件不足无法使用该优惠券";
+    public static final String COUPON_UPDATE_START_TIME_ERROR = "修改的开始时间不能早于当前时间";
+    public static final String COUPON_UPDATE_END_TIME_ERROR = "修改的结束时间不能早于当前时间";
+    public static final String COUPON_STOCK_NOT_ENOUGH = "库存不足";
+    public static final String COUPON_IS_USING = "该优惠券正在被使用";
+    public static final String COUPON_HAS_EXPIRED = "优惠券已过期";
     public static final String GET_ADDRESS_DEFAULT_ERROR = "你没有设置默认地址";
     public static final String ORDERS_ID_IS_NULL = "订单号不能为空";
     public static final String ORDERS_IS_NULL = "订单不存在";

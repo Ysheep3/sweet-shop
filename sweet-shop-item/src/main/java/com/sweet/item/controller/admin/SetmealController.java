@@ -8,6 +8,7 @@ import com.sweet.item.entity.dto.SetmealPageDTO;
 import com.sweet.item.entity.vo.SetmealVO;
 import com.sweet.item.service.SetmealService;
 import lombok.RequiredArgsConstructor;
+import org.redisson.api.RedissonClient;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,6 +26,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SetmealController {
     private final SetmealService setmealService;
+    private final RedissonClient redissonClient;
+    private final static String KEY = "setmeal::";
 
     @GetMapping("/page")
     public Result<PageResult> page(SetmealPageDTO setmealPageDTO) {
@@ -39,14 +42,12 @@ public class SetmealController {
     }
 
     @PostMapping("/status/{status}")
-    //@CacheEvict(value = "setmealCache", allEntries = true)
     public Result<Void> startOrStop(@PathVariable Integer status, Long id) {
         setmealService.startOrStop(status, id);
         return Result.success();
     }
 
     @DeleteMapping
-   // @CacheEvict(value = "setmealCache", allEntries = true)
     public Result<Void> delete(@RequestParam List<Long> ids) {
         setmealService.deleteBatchByIds(ids);
         return Result.success();
@@ -59,8 +60,9 @@ public class SetmealController {
     }
 
     @PutMapping
-    //@CacheEvict(value = "setmealCache", allEntries = true)
     public Result<Void> update(@RequestBody SetmealDTO setmealDTO) {
+        redissonClient.getBucket(KEY + setmealDTO.getCategoryId()).delete();
+        redissonClient.getBucket(KEY + 0).delete();
         setmealService.updateWithDish(setmealDTO);
         return Result.success();
     }

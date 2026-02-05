@@ -1,10 +1,9 @@
 package com.sweet.coupon.controller.user;
 
 import com.sweet.common.result.Result;
-import com.sweet.coupon.entity.dto.UserCouponClaimDTO;
+import com.sweet.coupon.entity.dto.UserCouponRedeemDTO;
 import com.sweet.coupon.entity.vo.UserCouponVO;
 import com.sweet.coupon.service.UserCouponService;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,8 +22,8 @@ public class UserCouponController {
     }
 
     @PostMapping("/claim")
-    public Result<Void> claimCoupon(@RequestBody UserCouponClaimDTO requestParam) {
-        userCouponService.claimCoupon(requestParam);
+    public Result<Void> redeemCoupon(@RequestBody UserCouponRedeemDTO requestParam) {
+        userCouponService.redeemCoupon(requestParam);
         return Result.success();
     }
 

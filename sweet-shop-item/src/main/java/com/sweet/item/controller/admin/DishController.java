@@ -1,25 +1,18 @@
 package com.sweet.item.controller.admin;
 
 
-import cn.hutool.db.Db;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.sweet.api.dto.DishOverViesVO;
-import com.sweet.common.constant.MessageConstant;
-import com.sweet.common.context.BaseContext;
-import com.sweet.common.exception.StopNotAllowException;
 import com.sweet.common.result.PageResult;
 import com.sweet.common.result.Result;
 import com.sweet.item.entity.dto.DishDTO;
 import com.sweet.item.entity.dto.DishPageDTO;
 import com.sweet.item.entity.pojo.Dish;
-import com.sweet.item.entity.pojo.SetmealDish;
 import com.sweet.item.entity.vo.DishVO;
 import com.sweet.item.service.DishService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.CacheEvict;
+import org.redisson.api.RedissonClient;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -35,6 +28,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DishController {
     private final DishService dishService;
+    private final RedissonClient redissonClient;
+    private final static String KEY = "dish::";
 
     @GetMapping("/page")
     public Result<PageResult> page(DishPageDTO dishPageDTO) {
@@ -49,7 +44,6 @@ public class DishController {
     }
 
     @DeleteMapping
-    //@CacheEvict(cacheNames = "dishCache", allEntries = true)
     public Result<Void> delete(@RequestParam List<Long> ids) {
         dishService.deleteBatchByIds(ids);
         return Result.success();
@@ -62,16 +56,16 @@ public class DishController {
     }
 
     @PostMapping("/status/{status}")
-    //@CacheEvict(cacheNames = "dishCache", allEntries = true)
     public Result<Void> startOrStop(@PathVariable Integer status, Long id){
         dishService.startOrStop(status, id);
         return Result.success();
     }
 
     @PutMapping
-    //@CacheEvict(cacheNames = "dishCache", allEntries = true)
     public Result<Void> update(@RequestBody DishDTO dishDTO) {
-        dishService.updateDishWithFlavor(dishDTO);
+        redissonClient.getBucket(KEY + dishDTO.getCategoryId()).delete();
+        redissonClient.getBucket(KEY + 0).delete();
+        dishService.updateDish(dishDTO);
         return Result.success();
     }
 
