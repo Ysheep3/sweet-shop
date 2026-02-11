@@ -382,13 +382,7 @@ public class CouponServiceImpl implements CouponService {
         String tags = StrUtil.join(",", couponDTO.getTags());
         coupon.setTags(tags);
 
-        int row = couponMapper.updateById(coupon);
 
-        if (row < 1) {
-            throw new CouponBusinessException(MessageConstant.UPDATE_ERROR);
-        }
-
-        Long couponId = coupon.getId();
 
         boolean startTimeChanged =
                 coupon.getStartTime() != null
@@ -397,6 +391,28 @@ public class CouponServiceImpl implements CouponService {
         boolean endTimeChanged =
                 coupon.getEndTime() != null
                         && !coupon.getEndTime().isEqual(oldCoupon.getEndTime());
+
+        // 只要开始或结束时间发生变化，就重新计算有效期天数
+        if (startTimeChanged || endTimeChanged) {
+
+            LocalDateTime startTime = coupon.getStartTime();
+            LocalDateTime endTime = coupon.getEndTime();
+
+            if (startTime != null && endTime != null) {
+                long validDay = Duration.between(startTime, endTime).toDays();
+
+                validDay = Math.max(validDay, 1);
+                coupon.setValidDay((int) validDay);
+            }
+        }
+
+        int row = couponMapper.updateById(coupon);
+
+        if (row < 1) {
+            throw new CouponBusinessException(MessageConstant.UPDATE_ERROR);
+        }
+
+        Long couponId = coupon.getId();
 
         // 重新发送消息
         if (startTimeChanged) {
@@ -435,79 +451,94 @@ public class CouponServiceImpl implements CouponService {
             throw new CouponBusinessException(MessageConstant.GET_COUPON_ERROR);
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now().withNano(0);
 
-        // 检查是否在生效期内
-//        boolean isInEffectPeriod = now.isAfter(coupon.getStartTime())
-//                && now.isBefore(coupon.getEndTime());
-//
-//        if (isInEffectPeriod) {
-//            throw new CouponBusinessException(MessageConstant.COUPON_UPDATE_STATUS_ERROR_BY_NOT_IN_TIME);
-//        }
-
-        // 设置启用时间
-        LocalDateTime endTime = null;
+        // 启用优惠券
         if (Objects.equals(status, CouponStatusEnum.AVAILABLE.getCode())) {
-            coupon.setStartTime(now.withNano(0));
 
+            coupon.setStatus(status);
+            coupon.setStartTime(now);
+
+            LocalDateTime endTime = null;
             if (coupon.getValidDay() != null) {
-                endTime = now.plusDays(coupon.getValidDay());
-                coupon.setEndTime(endTime.withNano(0));
+                endTime = now.plusDays(coupon.getValidDay()).withNano(0);
+                coupon.setEndTime(endTime);
             }
+
+            int row = couponMapper.updateById(coupon);
+            if (row < 1) {
+                throw new CouponBusinessException(MessageConstant.UPDATE_ERROR);
+            }
+
+            // ===== Redis 写入 =====
+            String couponKey = String.format(CouponRedisKey.COUPON_KEY, coupon.getId());
+
+            Map<String, Object> couponMap = BeanUtil.beanToMap(coupon, false, true);
+            Map<String, String> actualCouponMap = couponMap.entrySet()
+                    .stream()
+                    .collect(Collectors.toMap(
+                            Map.Entry::getKey,
+                            e -> e.getValue() != null ? e.getValue().toString() : ""
+                    ));
+
+            List<String> args = new ArrayList<>(actualCouponMap.size() * 2 + 1);
+            actualCouponMap.forEach((k, v) -> {
+                args.add(k);
+                args.add(v);
+            });
+
+            long endTimeMillis = endTime
+                    .atZone(ZoneId.of("Asia/Shanghai"))
+                    .toInstant()
+                    .toEpochMilli();
+
+            // EXPIREAT 使用秒级时间戳
+            args.add(String.valueOf(endTimeMillis / 1000));
+
+            String luaScript =
+                    "redis.call('HMSET', KEYS[1], unpack(ARGV, 1, #ARGV - 1));" +
+                            "redis.call('EXPIREAT', KEYS[1], ARGV[#ARGV]);";
+
+            stringRedisTemplate.execute(
+                    new DefaultRedisScript<>(luaScript, Long.class),
+                    Collections.singletonList(couponKey),
+                    args.toArray()
+            );
+
+            // ===== 加入“可用优惠券索引” =====
+            stringRedisTemplate.opsForSet()
+                    .add(CouponRedisKey.COUPON_ENABLE_KEY, id.toString());
+
+            // ===== 投递延迟过期事件 =====
+            CouponExecuteStatusEvent event = CouponExecuteStatusEvent.builder()
+                    .couponId(id)
+                    .deliverTime(endTimeMillis)
+                    .build();
+
+            endProducer.sendMessage(event);
+
+            return;
         }
 
-
+        // 停用优惠券
         coupon.setStatus(status);
 
-        // 直接更新，不需要复杂条件
         int row = couponMapper.updateById(coupon);
-
         if (row < 1) {
             throw new CouponBusinessException(MessageConstant.UPDATE_ERROR);
         }
 
         String couponKey = String.format(CouponRedisKey.COUPON_KEY, coupon.getId());
-        Map<String, Object> couponMap = BeanUtil.beanToMap(coupon, false, true);
-        Map<String, String> actrualCouponMap = couponMap.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey,
-                        entry -> entry.getValue() != null ? entry.getValue().toString() : ""
-                ));
 
-        List<String> args = new ArrayList<>(actrualCouponMap.size() * 2 + 1);
-        actrualCouponMap.forEach((key, value) -> {
-            args.add(key);
-            args.add(value);
-        });
+        // 1️⃣ 删除 Redis 中的优惠券缓存
+        stringRedisTemplate.delete(couponKey);
 
-        long endTimeMills = endTime.atZone(ZoneId.of("Asia/Shanghai")).toInstant().toEpochMilli();
-        String endTimeStr = String.valueOf(endTimeMills / 1000);
-        args.add(endTimeStr);
-        List<String> keys = Collections.singletonList(couponKey);
+        // 2️⃣ 从“可用索引集合”中移除
+        stringRedisTemplate.opsForSet()
+                .remove(CouponRedisKey.COUPON_ENABLE_KEY, id.toString());
 
-        String luaScript = "redis.call('HMSET', KEYS[1], unpack(ARGV, 1, #ARGV -1))" +
-                "redis.call('EXPIREAT', KEYS[1], ARGV[#ARGV])";
-
-        stringRedisTemplate.execute(
-                new DefaultRedisScript<>(luaScript, Long.class),
-                keys,
-                args.toArray()
-        );
-        // 加入“可查询索引”
-        stringRedisTemplate.opsForSet().add(CouponRedisKey.COUPON_ENABLE_KEY, id.toString());
-
-
-        if (Objects.equals(status, CouponStatusEnum.AVAILABLE.getCode())) {
-            // 延迟队列设置过期
-            CouponExecuteStatusEvent event = CouponExecuteStatusEvent
-                    .builder()
-                    .couponId(id)
-                    .deliverTime(endTimeMills)
-                    .build();
-
-            endProducer.sendMessage(event);
-
-        }
     }
+
 
     @Override
     public void delete(List<Long> ids) {

@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 public class CategoryVO implements Serializable {
     private static final long serialVersionUID = 1L;
     /** 分类id */
-    private String  id;
+    private String id;
 
     /**类型: 1菜品分类 2套餐分类 */
     private Integer type;
@@ -28,4 +28,7 @@ public class CategoryVO implements Serializable {
 
     /** 状态：1启用 0禁用 */
     private Integer status;
+
+    /** 修改时间 */
+    private LocalDateTime updateTime;
 }

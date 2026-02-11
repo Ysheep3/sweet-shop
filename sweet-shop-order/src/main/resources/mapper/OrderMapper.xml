@@ -45,4 +45,38 @@
             </if>
         </where>
     </select>
+
+    <select id="selectRiderOrderStat" resultType="com.sweet.order.entity.dto.RiderOrderStatDTO">
+        SELECT
+            delivery_employee_id AS riderId,
+
+            -- 总订单数：已接单 / 派送中 / 已完成
+            SUM(
+                    CASE WHEN status IN (3,4,5) THEN 1 ELSE 0 END
+            ) AS totalOrderCount,
+
+            -- 有效订单数：已完成
+            SUM(
+                    CASE WHEN status = 5 THEN 1 ELSE 0 END
+            ) AS validOrderCount
+
+        FROM orders
+        WHERE order_type = 1
+          AND pay_status = 1
+          AND delivery_employee_id IS NOT NULL
+          AND order_time BETWEEN #{beginTime} AND #{endTime}
+
+        GROUP BY delivery_employee_id
+    </select>
+    <select id="selectRiderSalaryStat" resultType="com.sweet.api.dto.RiderSalaryStatDTO">
+        SELECT delivery_employee_id AS riderId,
+               COUNT(*)             AS finishOrderCount
+        FROM orders
+        WHERE order_type = 1
+          AND pay_status = 1
+          AND status = 5
+          AND delivery_employee_id IS NOT NULL
+          AND order_time BETWEEN #{beginTime} AND #{endTime}
+        GROUP BY delivery_employee_id
+    </select>
 </mapper>

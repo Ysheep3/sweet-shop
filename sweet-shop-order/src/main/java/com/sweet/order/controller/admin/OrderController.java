@@ -6,6 +6,7 @@ import com.sweet.common.result.PageResult;
 import com.sweet.common.result.Result;
 import com.sweet.order.entity.dto.OrderDTO;
 import com.sweet.order.entity.dto.OrdersPageDTO;
+import com.sweet.order.entity.dto.RiderOrderStatDTO;
 import com.sweet.order.entity.pojo.Order;
 import com.sweet.order.entity.vo.OrderCountVO;
 import com.sweet.order.entity.vo.OrderVO;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 
 /**
  * <p>
@@ -109,4 +111,18 @@ public class OrderController {
         SalesTop10ReportVO vo = orderService.getTop10(orderReportDTO);
         return Result.success(vo);
     }
+
+    @PostMapping("/riderOrders")
+    Result<List<RiderOrderStatDTO>> getRiderOrders(@RequestBody OrderReportDTO orderReportDTO) {
+        List<RiderOrderStatDTO> vo = orderService.getRiderOrders(orderReportDTO);
+        return Result.success(vo);
+    }
+
+    @PostMapping("/riderSalary")
+    Result<List<RiderSalaryStatDTO>> getRiderSalary(@RequestBody OrderReportDTO orderReportDTO) {
+        List<RiderSalaryStatDTO> vo = orderService.getRiderSalary(orderReportDTO);
+        return Result.success(vo);
+    }
 }
+
+

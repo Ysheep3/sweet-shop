@@ -1,9 +1,6 @@
 package com.sweet.user.controller;
 
-import com.sweet.api.dto.OrderReportDTO;
-import com.sweet.api.dto.OrderReportVO;
-import com.sweet.api.dto.SalesTop10ReportVO;
-import com.sweet.api.dto.TurnoverReportVO;
+import com.sweet.api.dto.*;
 import com.sweet.common.result.Result;
 import com.sweet.user.entity.vo.UserReportVO;
 import com.sweet.user.service.ReportService;
@@ -44,6 +41,18 @@ public class ReportController {
     public Result<SalesTop10ReportVO> top10(OrderReportDTO orderReportDTO) {
         SalesTop10ReportVO salesTop10ReportVO = reportService.getTop10(orderReportDTO);
         return Result.success(salesTop10ReportVO);
+    }
+
+    @GetMapping("/riderOrders")
+    public Result<RiderOrdersReportVO> riderOrders(OrderReportDTO orderReportDTO) {
+        RiderOrdersReportVO riderOrdersReportVO = reportService.getRiderOrders(orderReportDTO);
+        return Result.success(riderOrdersReportVO);
+    }
+
+    @GetMapping("/riderSalary")
+    public Result<RiderSalaryReportVO> riderSalary(OrderReportDTO orderReportDTO) {
+        RiderSalaryReportVO riderSalaryReportVO = reportService.getRiderSalary(orderReportDTO);
+        return Result.success(riderSalaryReportVO);
     }
 
     @GetMapping("/export")

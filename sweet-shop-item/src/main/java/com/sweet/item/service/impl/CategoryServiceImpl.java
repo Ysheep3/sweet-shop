@@ -74,7 +74,14 @@ public class CategoryServiceImpl implements CategoryService {
 
 
         categoryMapper.selectPage(page, wrapper);
-        return new PageResult(page.getTotal(), page.getRecords());
+        List<CategoryVO> categoryVOList = new ArrayList<>();
+
+        for (Category category : page.getRecords()) {
+            CategoryVO categoryVO = BeanUtil.toBean(category, CategoryVO.class);
+            categoryVOList.add(categoryVO);
+        }
+
+        return new PageResult(page.getTotal(), categoryVOList);
     }
 
     /**

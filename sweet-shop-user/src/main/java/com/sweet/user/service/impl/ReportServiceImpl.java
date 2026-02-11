@@ -11,8 +11,10 @@ import com.sweet.api.dto.*;
 import com.sweet.common.constant.MessageConstant;
 import com.sweet.common.exception.OrderBusinessException;
 import com.sweet.common.result.Result;
+import com.sweet.user.entity.pojo.Employee;
 import com.sweet.user.entity.pojo.User;
 import com.sweet.user.entity.vo.UserReportVO;
+import com.sweet.user.mapper.EmployeeMapper;
 import com.sweet.user.mapper.UserMapper;
 import com.sweet.user.service.ReportService;
 import com.sweet.user.service.WorkSpaceService;
@@ -30,11 +32,14 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -42,6 +47,9 @@ public class ReportServiceImpl implements ReportService {
     private final WorkSpaceService workSpaceService;
     private final UserMapper userMapper;
     private final OrderClient orderClient;
+    private final EmployeeMapper employeeMapper;
+
+    private static final BigDecimal RiderIncome = BigDecimal.valueOf(2);
 
     /**
      * 订单统计
@@ -200,5 +208,123 @@ public class ReportServiceImpl implements ReportService {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public RiderOrdersReportVO getRiderOrders(OrderReportDTO orderReportDTO) {
+        if (orderReportDTO == null) {
+            throw new OrderBusinessException(MessageConstant.DO_ERROR);
+        }
+
+        Result<List<RiderOrderStatDTO>> result = orderClient.getRiderOrders(orderReportDTO);
+
+        if (result == null) {
+            throw new OrderBusinessException(MessageConstant.GET_ERROR);
+        }
+
+        List<RiderOrderStatDTO> statList = result.getData();
+        if (statList.isEmpty()) {
+            return new RiderOrdersReportVO();
+        }
+
+        List<Long> riderIds = statList.stream()
+                .map(RiderOrderStatDTO::getRiderId)
+                .toList();
+
+        List<Employee> riders = employeeMapper.selectByIds(riderIds);
+
+        if (riders.isEmpty()) {
+            return new RiderOrdersReportVO();
+        }
+
+        Map<Long, String> riderNameMap = riders.stream()
+                .collect(Collectors.toMap(Employee::getId, Employee::getName));
+
+        // 4. 组装 VO（只保留骑手）
+        List<String> riderNames = new ArrayList<>();
+        List<String> totalOrders = new ArrayList<>();
+        List<String> validOrders = new ArrayList<>();
+
+        for (RiderOrderStatDTO dto : statList) {
+            String riderName = riderNameMap.get(dto.getRiderId());
+            if (riderName == null) {
+                // 非骑手（role != 1），直接跳过
+                continue;
+            }
+            riderNames.add(riderName);
+            totalOrders.add(dto.getTotalOrderCount().toString());
+            validOrders.add(dto.getValidOrderCount().toString());
+        }
+
+        RiderOrdersReportVO vo = new RiderOrdersReportVO();
+        vo.setRiderNameList(String.join(",", riderNames));
+        vo.setTotalOrderList(String.join(",", totalOrders));
+        vo.setValidOrderList(String.join(",", validOrders));
+
+        return vo;
+    }
+
+    @Override
+    public RiderSalaryReportVO getRiderSalary(OrderReportDTO orderReportDTO) {
+        if (orderReportDTO == null) {
+            throw new OrderBusinessException(MessageConstant.DO_ERROR);
+        }
+
+        Result<List<RiderSalaryStatDTO>> result = orderClient.getRiderSalary(orderReportDTO);
+
+        if (result == null) {
+            throw new OrderBusinessException(MessageConstant.GET_ERROR);
+        }
+
+        List<RiderSalaryStatDTO> statList = result.getData();
+        if (statList.isEmpty()) {
+            return new RiderSalaryReportVO();
+        }
+
+        List<Long> riderIds = statList.stream()
+                .map(RiderSalaryStatDTO::getRiderId)
+                .toList();
+
+        List<Employee> riders = employeeMapper.selectByIds(riderIds);
+
+        Map<Long, String> riderNameMap = riders.stream()
+                .collect(Collectors.toMap(Employee::getId, Employee::getName));
+
+        // 4. 组装 VO
+        List<String> riderNames = new ArrayList<>();
+        List<String> totalSalaryList = new ArrayList<>();
+        List<String> avgSalaryList = new ArrayList<>();
+
+        for (RiderSalaryStatDTO dto : statList) {
+
+            String riderName = riderNameMap.get(dto.getRiderId());
+            if (riderName == null) {
+                continue; // 非骑手
+            }
+
+            int finishCount = dto.getFinishOrderCount();
+            BigDecimal totalSalary = RiderIncome.multiply(BigDecimal.valueOf(finishCount));
+
+            riderNames.add(riderName);
+            totalSalaryList.add(String.valueOf(totalSalary));
+
+            BigDecimal avgSalary = BigDecimal.ZERO;
+            if (finishCount > 0) {
+                avgSalary = totalSalary.divide(
+                        BigDecimal.valueOf(finishCount),
+                        2,                       // 保留 2 位小数
+                        RoundingMode.HALF_UP     // 金额常用规则
+                );
+            }
+
+            avgSalaryList.add(avgSalary.toString());
+        }
+
+        RiderSalaryReportVO vo = new RiderSalaryReportVO();
+        vo.setRiderNameList(String.join(",", riderNames));
+        vo.setTotalSalaryList(String.join(",", totalSalaryList));
+        vo.setAvgSalaryList(String.join(",", avgSalaryList));
+
+        return vo;
     }
 }

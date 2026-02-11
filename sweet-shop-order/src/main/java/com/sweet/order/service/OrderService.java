@@ -5,6 +5,7 @@ import com.sweet.common.result.PageResult;
 import com.sweet.order.entity.dto.OrderDTO;
 import com.sweet.order.entity.dto.OrderPayDTO;
 import com.sweet.order.entity.dto.OrdersPageDTO;
+import com.sweet.order.entity.dto.RiderOrderStatDTO;
 import com.sweet.order.entity.vo.*;
 
 import java.time.LocalDateTime;
@@ -157,4 +158,18 @@ public interface OrderService {
      * @return
      */
     OrderRiderTrendVO trend(Integer days);
+
+    /**
+     * 管理端统计骑手数据
+     * @param orderReportDTO
+     * @return
+     */
+    List<RiderOrderStatDTO> getRiderOrders(OrderReportDTO orderReportDTO);
+
+    /**
+     * 管理端统计骑手数据
+     * @param orderReportDTO
+     * @return
+     */
+    List<RiderSalaryStatDTO> getRiderSalary(OrderReportDTO orderReportDTO);
 }

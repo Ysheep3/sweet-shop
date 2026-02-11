@@ -1,9 +1,6 @@
 package com.sweet.user.service;
 
-import com.sweet.api.dto.OrderReportDTO;
-import com.sweet.api.dto.OrderReportVO;
-import com.sweet.api.dto.SalesTop10ReportVO;
-import com.sweet.api.dto.TurnoverReportVO;
+import com.sweet.api.dto.*;
 import com.sweet.user.entity.vo.UserReportVO;
 
 import javax.servlet.http.HttpServletResponse;
@@ -47,4 +44,18 @@ public interface ReportService {
      * @param response
      */
     void getExcel(HttpServletResponse response);
+
+    /**
+     * 统计 骑手订单数据
+     * @param orderReportDTO
+     * @return
+     */
+    RiderOrdersReportVO getRiderOrders(OrderReportDTO orderReportDTO);
+
+    /**
+     * 统计 骑手薪资数据
+     * @param orderReportDTO
+     * @return
+     */
+    RiderSalaryReportVO getRiderSalary(OrderReportDTO orderReportDTO);
 }

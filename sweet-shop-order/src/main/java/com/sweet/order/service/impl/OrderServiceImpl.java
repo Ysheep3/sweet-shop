@@ -3,15 +3,12 @@ package com.sweet.order.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.http.HttpException;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONException;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson.JSON;
 import com.alipay.api.AlipayClient;
-import com.alipay.api.request.AlipayTradeCreateRequest;
-import com.alipay.api.response.AlipayTradeCreateResponse;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -35,10 +32,8 @@ import com.sweet.common.utils.HttpClientUtil;
 import com.sweet.order.common.OrderPayStatusEnum;
 import com.sweet.order.common.OrderStatusEnum;
 import com.sweet.order.common.OrderTypeEnum;
-import com.sweet.order.entity.dto.OrderDTO;
-import com.sweet.order.entity.dto.OrderPayDTO;
-import com.sweet.order.entity.dto.OrdersPageDTO;
-import com.sweet.order.entity.dto.UserCouponDTO;
+import com.sweet.order.entity.dto.*;
+import com.sweet.order.entity.dto.RiderOrderStatDTO;
 import com.sweet.order.entity.pojo.Order;
 import com.sweet.order.entity.pojo.OrderDetail;
 import com.sweet.order.entity.vo.*;
@@ -50,13 +45,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
-import org.redisson.Redisson;
 import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.DayOfWeek;
@@ -64,7 +57,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -971,5 +963,21 @@ public class OrderServiceImpl implements OrderService {
                 .orderFinishCountList(orderCounts)
                 .incomeList(incomes)
                 .build();
+    }
+
+    @Override
+    public List<RiderOrderStatDTO> getRiderOrders(OrderReportDTO orderReportDTO) {
+        LocalDateTime beginTime = LocalDateTime.of(orderReportDTO.getBegin(), LocalTime.MIN);
+        LocalDateTime endTime = LocalDateTime.of(orderReportDTO.getEnd(), LocalTime.MAX);
+
+        return orderMapper.selectRiderOrderStat(beginTime, endTime);
+    }
+
+    @Override
+    public List<RiderSalaryStatDTO> getRiderSalary(OrderReportDTO orderReportDTO) {
+        LocalDateTime beginTime = LocalDateTime.of(orderReportDTO.getBegin(), LocalTime.MIN);
+        LocalDateTime endTime = LocalDateTime.of(orderReportDTO.getEnd(), LocalTime.MAX);
+
+        return orderMapper.selectRiderSalaryStat(beginTime, endTime);
     }
 }
