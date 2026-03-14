@@ -1,13 +1,12 @@
 package com.sweet.user.service;
 
 import com.sweet.common.result.PageResult;
-import com.sweet.user.entity.dto.EmployeeDTO;
-import com.sweet.user.entity.dto.EmployeeLoginDTO;
-import com.sweet.user.entity.dto.EmployeePageDTO;
-import com.sweet.user.entity.dto.RiderLoginDTO;
+import com.sweet.user.entity.dto.*;
 import com.sweet.user.entity.pojo.Employee;
 import com.sweet.user.entity.vo.EmployeeLoginVO;
 import com.sweet.user.entity.vo.EmployeeVO;
+
+import java.util.List;
 
 public interface EmployeeService {
     EmployeeLoginVO login(EmployeeLoginDTO employeeLoginDTO);
@@ -23,4 +22,8 @@ public interface EmployeeService {
     EmployeeVO getById(Long id);
 
     EmployeeLoginVO riderLogin(EmployeeLoginDTO employeeLoginDTO);
+
+    void getRiderLocation(RiderLocationDTO riderLocationDTO);
+
+    List<Long> getRiderIds();
 }

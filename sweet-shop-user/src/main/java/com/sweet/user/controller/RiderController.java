@@ -7,6 +7,7 @@ import com.sweet.common.utils.JwtUtil;
 import com.sweet.user.common.JwtClaimsEnum;
 import com.sweet.user.common.JwtProperties;
 import com.sweet.user.entity.dto.EmployeeLoginDTO;
+import com.sweet.user.entity.dto.RiderLocationDTO;
 import com.sweet.user.entity.dto.RiderLoginDTO;
 import com.sweet.user.entity.vo.EmployeeLoginVO;
 import com.sweet.user.service.EmployeeService;
@@ -39,5 +40,10 @@ public class RiderController {
         return Result.success(employeeLoginVO);
     }
 
+    @PostMapping("/location")
+    public Result<Void> getLocation(@RequestBody RiderLocationDTO riderLocationDTO) {
+        employeeService.getRiderLocation(riderLocationDTO);
+        return Result.success();
+    }
 
 }

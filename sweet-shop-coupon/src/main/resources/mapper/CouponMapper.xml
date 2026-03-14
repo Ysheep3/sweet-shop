@@ -18,7 +18,7 @@
                 and type = #{coupon.type}
             </if>
             <if test="coupon.status != null">
-                and type = #{coupon.status}
+                and status = #{coupon.status}
             </if>
         </where>
         order by create_time desc

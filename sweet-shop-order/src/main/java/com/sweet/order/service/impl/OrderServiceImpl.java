@@ -14,14 +14,12 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.sweet.api.client.CartClient;
-import com.sweet.api.client.CouponClient;
-import com.sweet.api.client.UserClient;
-import com.sweet.api.client.UserCouponClient;
+import com.sweet.api.client.*;
 import com.sweet.api.dto.*;
 import com.sweet.common.constant.MessageConstant;
 import com.sweet.common.context.BaseContext;
 import com.sweet.common.exception.AddressBookBusinessException;
+import com.sweet.common.exception.BaseException;
 import com.sweet.common.exception.OrderBusinessException;
 import com.sweet.common.properties.AlipayProperties;
 import com.sweet.common.properties.AmapProperties;
@@ -39,14 +37,19 @@ import com.sweet.order.entity.pojo.OrderDetail;
 import com.sweet.order.entity.vo.*;
 import com.sweet.order.mapper.OrderDetailMapper;
 import com.sweet.order.mapper.OrderMapper;
+import com.sweet.order.mq.event.AdminDispatchOrderEvent;
+import com.sweet.order.mq.producer.AdminDispatchOrderProducer;
 import com.sweet.order.service.OrderService;
+import com.sweet.order.websocket.RiderWebSocketServer;
 import com.sweet.order.websocket.WebSocketServer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 import org.redisson.api.RBucket;
+import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,6 +60,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -71,14 +76,18 @@ public class OrderServiceImpl implements OrderService {
     private final AlipayClient alipayClient;
     private final AlipayProperties alipayProperties;
     private final WebSocketServer webSocketServer;
+    private final RiderWebSocketServer riderWebSocketServer;
     private final AmapProperties amapProperties;
     private final ShopProperties shopProperties;
     private final RedissonClient redissonClient;
+    private final AdminDispatchOrderProducer adminDispatchOrderProducer;
 
     // 配送费 3元
     private static final BigDecimal ShippingFees = BigDecimal.valueOf(3);
     // 假设骑手每单收入1元
     private static final BigDecimal RiderIncome = BigDecimal.valueOf(2);
+    private final EmployeeClient employeeClient;
+    private final StringRedisTemplate stringRedisTemplate;
 
 
     @Override
@@ -104,17 +113,21 @@ public class OrderServiceImpl implements OrderService {
 
             // 地址 → 经纬度
             userLocation = getLocation(userAddress);
-            RBucket<String> bucket = redissonClient.getBucket("shop_location");
-
-            String shopLocation = bucket.get();
+            String shopLocation = stringRedisTemplate.opsForValue().get("shop_location");
+//            RBucket<String> bucket = redissonClient.getBucket("shop_location");
+//
+//            String shopLocation = bucket.get();
 
             if (StrUtil.isBlank(shopLocation)) {
                 shopLocation = getLocation(shopAddress); // 调高德 geocode
-                bucket.set(shopLocation);
+                stringRedisTemplate.opsForValue().set("shop_location", shopLocation);
             }
 
             // 计算距离 大于5000则抛异常
-            calculateDistance(userLocation, shopLocation);
+            Integer distance = calculateDistance(userLocation, shopLocation);
+            if (distance > 5000) {
+                throw new OrderBusinessException(MessageConstant.ORDERS_DISTANCE_ERROR);
+            }
         }
 
 
@@ -172,7 +185,7 @@ public class OrderServiceImpl implements OrderService {
         return orderPayVO;
     }
 
-    private void calculateDistance(String origin, String destination) {
+    private Integer calculateDistance(String origin, String destination) {
         try {
             String url = "https://restapi.amap.com/v3/distance";
 
@@ -208,9 +221,7 @@ public class OrderServiceImpl implements OrderService {
                 throw new OrderBusinessException("距离计算失败：距离数据为空");
             }
 
-            if (distance > 5000) {
-                throw new OrderBusinessException(MessageConstant.ORDERS_DISTANCE_ERROR);
-            }
+            return distance;
 
         } catch (JSONException e) {
             log.error("距离计算数据解析异常，起点：{}，终点：{}", origin, destination, e);
@@ -397,7 +408,17 @@ public class OrderServiceImpl implements OrderService {
         wrapper.eq(Order::getStatus, OrderStatusEnum.IN_DELIVERY.getCode());
         Long deliveryInProgress = orderMapper.selectCount(wrapper);
 
+        wrapper.clear();
+        wrapper.eq(Order::getStatus, OrderStatusEnum.PENDING_PICKUP.getCode());
+        Long toBePickUp = orderMapper.selectCount(wrapper);
+
+        wrapper.clear();
+        wrapper.eq(Order::getStatus, OrderStatusEnum.PICKING_UP.getCode());
+        Long pickingUp = orderMapper.selectCount(wrapper);
+
         return OrderCountVO.builder()
+                .pickingUp(pickingUp)
+                .toBePickUp(toBePickUp)
                 .pendingPayment(pendingPayment)
                 .toBeConfirmed(toBeConfirmed)
                 .confirmed(confirmed)
@@ -445,11 +466,128 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional
     public void confirm(OrderDTO orderDTO) {
         Order order = getById(orderDTO);
         order.setStatus(OrderStatusEnum.ACCEPTED.getCode());
-
         orderMapper.updateById(order);
+
+        // TODO 接完单之后 通过算法派单给骑手
+        // 获取店内所有骑手
+        Result<List<Long>> result = employeeClient.getRiderIds();
+        List<Long> ids = result.getData();
+        String key = "rider:location:";
+        String shopLocation = stringRedisTemplate.opsForValue().get("shop_location");
+        if (StrUtil.isBlank(shopLocation)) {
+            shopLocation = getLocation(shopProperties.getAddress());
+            stringRedisTemplate.opsForValue().set("shop_location", shopLocation);
+        }
+        Map<Long, Double> scoreMap = new HashMap<>();
+        for (Long id : ids) {
+            // 排除不在线的骑手
+            if (!stringRedisTemplate.hasKey(key + id)) {
+                continue;  // ❗ 不在线，跳过
+            }
+            // 查询该骑手正在派送的单子
+            List<Order> orders = orderMapper.selectList(
+                    Wrappers.lambdaQuery(Order.class)
+                            .eq(Order::getDeliveryEmployeeId, id)
+                            .eq(Order::getStatus, OrderStatusEnum.IN_DELIVERY.getCode())
+                            .eq(Order::getOrderType, OrderTypeEnum.DELIVERY.getCode())
+                            .orderByAsc(Order::getOrderTime)
+            );
+
+            if (orders.size() >= 10) {
+                continue;  // ❗ 已满 10 单
+            }
+
+            // 获取骑手当前位置
+            Map<Object, Object> map = stringRedisTemplate.opsForHash().entries(key + id);
+            if (map.isEmpty()) {
+                continue;  // ❗ 位置异常，跳过
+            }
+
+            String longitude = (String) map.get("longitude");
+            String latitude = (String) map.get("latitude");
+            if (longitude == null || latitude == null) {
+                continue;
+            }
+
+            String currentLocation  = longitude + "," + latitude;
+            double totalDistance = 0;
+            for (Order o : orders) {
+                String userLocation = o.getLocation();
+                double distance = localCalculateDistance(currentLocation , userLocation);
+                totalDistance += distance;
+                currentLocation = userLocation;
+            }
+
+            double shopToRiderDistance = localCalculateDistance(shopLocation, currentLocation);
+            // score = dShop + dCurrent + (orderCount * 1000);
+            double score = shopToRiderDistance + totalDistance + (orders.size() * 1000);
+            scoreMap.put(id, score);
+        }
+        if (scoreMap.isEmpty()) {
+            throw new BaseException("暂无可派送骑手");
+        }
+
+        List<Map.Entry<Long, Double>> entries =
+                new ArrayList<>(scoreMap.entrySet());
+
+        // 先随机打乱
+        Collections.shuffle(entries);
+        // 再排序（稳定排序）
+        entries.sort(Map.Entry.comparingByValue());
+        // 按 score 升序排序
+        List<Long> sortedRiders = entries.stream()
+                .map(Map.Entry::getKey)
+                .toList();
+
+        String dispatchKey = "dispatch:order:" + order.getId();
+
+        stringRedisTemplate.opsForValue().set(
+                dispatchKey,
+                JSON.toJSONString(sortedRiders),
+                2, TimeUnit.MINUTES
+        );
+
+        Long firstRider = sortedRiders.get(0);
+        Map<String, Object> map = BeanUtil.beanToMap(order);
+        String message = JSON.toJSONString(map);
+
+        riderWebSocketServer.sendToRider(firstRider, message);
+
+        AdminDispatchOrderEvent event = AdminDispatchOrderEvent.builder()
+                .orderId(order.getId())
+                .redisKey(dispatchKey)
+                .deliverTime(System.currentTimeMillis() + 30000)
+                .build();
+
+        adminDispatchOrderProducer.sendMessage(event);
+    }
+
+    private double localCalculateDistance(String origin, String destination) {
+        String[] p1 = origin.split(",");
+        String[] p2 = destination.split(",");
+
+        double riderLon = Double.parseDouble(p1[0]);
+        double riderLat = Double.parseDouble(p1[1]);
+        double userLon = Double.parseDouble(p2[0]);
+        double userLat = Double.parseDouble(p2[1]);
+
+        final int R = 6371000; // 地球半径（米）
+        double dLat = Math.toRadians(userLat - riderLat);
+        double dLon = Math.toRadians(userLon - riderLon);
+
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(Math.toRadians(riderLat)) *
+                        Math.cos(Math.toRadians(userLat)) *
+                        Math.sin(dLon / 2) *
+                        Math.sin(dLon / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return R * c; // 单位：米
     }
 
     @Override
@@ -492,7 +630,7 @@ public class OrderServiceImpl implements OrderService {
 
         String orderNo = order.getOrderNo();
 
-        // 前端json格式接收
+        // 前端 json 格式接收
         Map<String, Object> map = new HashMap<>();
         map.put("type", 2);
         map.put("orderId", id.toString());
@@ -751,17 +889,63 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public List<OrderVO> getByStatus(Integer status) {
-        if (status == null) {
+    public List<OrderVO> getByStatus(String type) { // // wait | accepted | delivery | completed
+        if (StrUtil.isBlank(type)) {
             throw new OrderBusinessException(MessageConstant.DO_ERROR);
         }
+        List<Order> orders = new ArrayList<>();
+        List<Integer> status = new ArrayList<>();
+        if ("wait".equals(type)) {
+            // 查询 rider_id IS NULL AND status IN (3,7)
+            status.add(OrderStatusEnum.ACCEPTED.getCode());
+            status.add(OrderStatusEnum.PENDING_PICKUP.getCode());
 
-        List<Order> orders = orderMapper.selectList(
-                Wrappers.lambdaQuery(Order.class)
-                        .eq(Order::getStatus, status)
-                        .eq(Order::getOrderType, OrderTypeEnum.DELIVERY.getCode())
-                        .orderByDesc(Order::getOrderTime)
-        );
+            orders = orderMapper.selectList(
+                    Wrappers.lambdaQuery(Order.class)
+                            .isNull(Order::getDeliveryEmployeeId)
+                            .in(Order::getStatus, status)
+                            .eq(Order::getOrderType, OrderTypeEnum.DELIVERY.getCode())
+                            .orderByDesc(Order::getOrderTime)
+            );
+        }
+
+        if ("accepted".equals(type)) {
+            // 查询 rider_id = 当前骑手 AND status IN (3,7,8)
+            status.add(OrderStatusEnum.ACCEPTED.getCode());
+            status.add(OrderStatusEnum.PENDING_PICKUP.getCode());
+            status.add(OrderStatusEnum.PICKING_UP.getCode());
+
+            orders = orderMapper.selectList(
+                    Wrappers.lambdaQuery(Order.class)
+                            .in(Order::getStatus, status)
+                            .eq(Order::getDeliveryEmployeeId, BaseContext.getCurrentId())
+                            .eq(Order::getOrderType, OrderTypeEnum.DELIVERY.getCode())
+                            .orderByDesc(Order::getOrderTime)
+            );
+        }
+
+        if ("delivery".equals(type)) {
+            // status = 4
+            orders = orderMapper.selectList(
+                    Wrappers.lambdaQuery(Order.class)
+                            .eq(Order::getStatus, OrderStatusEnum.IN_DELIVERY.getCode())
+                            .eq(Order::getDeliveryEmployeeId, BaseContext.getCurrentId())
+                            .eq(Order::getOrderType, OrderTypeEnum.DELIVERY.getCode())
+                            .orderByDesc(Order::getOrderTime)
+            );
+        }
+
+        if ("completed".equals(type)) {
+            // status = 5
+            orders = orderMapper.selectList(
+                    Wrappers.lambdaQuery(Order.class)
+                            .eq(Order::getStatus, OrderStatusEnum.COMPLETED.getCode())
+                            .eq(Order::getDeliveryEmployeeId, BaseContext.getCurrentId())
+                            .eq(Order::getOrderType, OrderTypeEnum.DELIVERY.getCode())
+                            .orderByDesc(Order::getOrderTime)
+            );
+        }
+
 
         if (CollUtil.isEmpty(orders)) {
             return List.of();
@@ -776,27 +960,48 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public void accept(String orderNo) {
+    public void accept(String orderNo) throws InterruptedException {
         if (orderNo == null) {
             throw new OrderBusinessException(MessageConstant.DO_ERROR);
         }
-        Order order = orderMapper.selectOne(
-                Wrappers.lambdaQuery(Order.class)
-                        .eq(Order::getOrderNo, orderNo)
-                        .eq(Order::getStatus, OrderStatusEnum.ACCEPTED.getCode())
-        );
+        RLock lock = redissonClient.getLock("rider_accept_lock:" + orderNo);
+        if (!lock.tryLock(3, 10, TimeUnit.SECONDS)) {
+            throw new OrderBusinessException("此订单已被其他骑手接取");
+        }
+        try {
+            List<Integer> status = List.of(OrderStatusEnum.ACCEPTED.getCode(),
+                    OrderStatusEnum.PENDING_PICKUP.getCode());
+            Order order = orderMapper.selectOne(
+                    Wrappers.lambdaQuery(Order.class)
+                            .eq(Order::getOrderNo, orderNo)
+                            .in(Order::getStatus, status)
+            );
 
-        if (order == null) {
-            throw new OrderBusinessException(MessageConstant.ORDERS_IS_NULL);
+            if (order == null) {
+                throw new OrderBusinessException(MessageConstant.ORDERS_IS_NULL);
+            }
+
+            if (order.getDeliveryEmployeeId() != null) {
+                throw new OrderBusinessException(MessageConstant.ORDERS_HAS_BEEN_ACCEPTED);
+            }
+
+            order.setDeliveryEmployeeId(BaseContext.getCurrentId());
+            int rows = orderMapper.update(
+                    null,
+                    Wrappers.lambdaUpdate(Order.class)
+                            .set(Order::getDeliveryEmployeeId, BaseContext.getCurrentId())
+                            .eq(Order::getOrderNo, orderNo)
+                            .isNull(Order::getDeliveryEmployeeId)
+            );
+
+            if (rows == 0) {
+                throw new OrderBusinessException("此订单已被其他骑手接取");
+            }
+
+        } finally {
+            lock.unlock();
         }
 
-        if (order.getDeliveryEmployeeId() != null) {
-            throw new OrderBusinessException(MessageConstant.ORDERS_HAS_BEEN_ACCEPTED);
-        }
-
-        order.setStatus(OrderStatusEnum.IN_DELIVERY.getCode());
-        order.setDeliveryEmployeeId(BaseContext.getCurrentId());
-        orderMapper.updateById(order);
     }
 
     @Override
@@ -865,10 +1070,28 @@ public class OrderServiceImpl implements OrderService {
                         .eq(Order::getOrderType, OrderTypeEnum.DELIVERY.getCode())
         );
 
+        // status: 3, 7
+        List<Integer> waitStatus = List.of(
+                OrderStatusEnum.ACCEPTED.getCode(),        // 3 待出餐
+                OrderStatusEnum.PENDING_PICKUP.getCode()   // 7 待取餐
+        );
         Long waitCount = orderMapper.selectCount(
                 Wrappers.lambdaQuery(Order.class)
-                        .eq(Order::getStatus, OrderStatusEnum.ACCEPTED.getCode())
+                        .isNull(Order::getDeliveryEmployeeId)
+                        .in(Order::getStatus, waitStatus)
                         .eq(Order::getOrderType, OrderTypeEnum.DELIVERY.getCode())
+        );
+
+        // status: 3, 7, 8
+        List<Integer> status = List.of(OrderStatusEnum.ACCEPTED.getCode(),
+                OrderStatusEnum.PENDING_PICKUP.getCode(),
+                OrderStatusEnum.PICKING_UP.getCode());
+
+        Long acceptedCount = orderMapper.selectCount(
+                Wrappers.lambdaQuery(Order.class)
+                        .eq(Order::getOrderType, OrderTypeEnum.DELIVERY.getCode())
+                        .eq(Order::getDeliveryEmployeeId, BaseContext.getCurrentId())
+                        .in(Order::getStatus, status)
         );
 
         Long deliveryCount = orderMapper.selectCount(
@@ -883,6 +1106,7 @@ public class OrderServiceImpl implements OrderService {
                 .deliveryCount(deliveryCount.intValue())
                 .completedCount(completedCount.intValue())
                 .todayFinished(todayCount.intValue())
+                .acceptedCount(acceptedCount.intValue())
                 .build();
     }
 
@@ -980,4 +1204,90 @@ public class OrderServiceImpl implements OrderService {
 
         return orderMapper.selectRiderSalaryStat(beginTime, endTime);
     }
+
+    @Override
+    public void foodCompleted(Long id) {
+        if (id == null) {
+            throw new OrderBusinessException(MessageConstant.DO_ERROR);
+        }
+
+        Order order = orderMapper.selectById(id);
+        if (order == null) {
+            throw new OrderBusinessException(MessageConstant.ORDERS_IS_NULL);
+        }
+
+        if (order.getOrderType().equals(OrderTypeEnum.DELIVERY.getCode())) {
+            int row = 0;
+            // 外卖单
+            Integer status = order.getStatus();
+            // 骑手未点击取餐 商家点击出餐 状态为待取餐
+            if (status.equals(OrderStatusEnum.ACCEPTED.getCode())) {
+                order.setStatus(OrderStatusEnum.PENDING_PICKUP.getCode());
+                row = orderMapper.updateById(order);
+
+            } else if (status.equals(OrderStatusEnum.PICKING_UP.getCode())) {
+                // 骑手已点击取餐 商家点击出餐 直接为派送中
+                order.setStatus(OrderStatusEnum.IN_DELIVERY.getCode());
+                row = orderMapper.updateById(order);
+            }
+
+            if (row < 1) {
+                throw new OrderBusinessException(MessageConstant.UPDATE_ERROR);
+            }
+        } else {
+            // 堂食单
+            order.setStatus(OrderStatusEnum.COMPLETED.getCode());
+            int row = orderMapper.updateById(order);
+
+            if (row < 1) {
+                throw new OrderBusinessException(MessageConstant.UPDATE_ERROR);
+            }
+        }
+    }
+
+    @Override
+    public Integer pickUp(String orderNo) {
+        if (StrUtil.isBlank(orderNo)) {
+            throw new OrderBusinessException(MessageConstant.DO_ERROR);
+        }
+
+        Order order = orderMapper.selectOne(
+                Wrappers.lambdaQuery(Order.class)
+                        .eq(Order::getOrderNo, orderNo)
+                        .eq(Order::getDeliveryEmployeeId, BaseContext.getCurrentId())
+                        .eq(Order::getOrderType, OrderTypeEnum.DELIVERY.getCode())
+        );
+
+        if (order == null) {
+            throw new OrderBusinessException(MessageConstant.ORDERS_IS_NULL);
+        }
+
+        Integer status = order.getStatus();
+        if (!(Objects.equals(status, OrderStatusEnum.ACCEPTED.getCode()) ||
+                Objects.equals(status, OrderStatusEnum.PENDING_PICKUP.getCode()))) {
+
+            throw new OrderBusinessException("当前状态不可取餐");
+        }
+
+        if (status.equals(OrderStatusEnum.ACCEPTED.getCode())) {
+            // 待出餐
+            status = OrderStatusEnum.PICKING_UP.getCode();
+            order.setStatus(status);
+
+        } else {
+            // 待取餐
+            status = OrderStatusEnum.IN_DELIVERY.getCode();
+            order.setStatus(status);
+        }
+
+        int row = orderMapper.updateById(order);
+
+        if (row < 1) {
+            throw new OrderBusinessException(MessageConstant.UPDATE_ERROR);
+        }
+
+        return status;
+    }
+
+
 }

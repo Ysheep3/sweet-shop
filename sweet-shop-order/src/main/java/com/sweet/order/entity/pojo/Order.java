@@ -47,7 +47,7 @@ public class Order implements Serializable {
 
     private Integer payMethod;
 
-    /** 1待付款 2待接单 3已接单 4派送中 5已完成 6已取消 */
+    /** 1待付款 2待接单 3待出餐 7待取餐 8取餐中 4派送中 5已完成 6已取消 */
     private Integer status;
 
     /** 支付状态 0未支付 1已支付 2退款 */

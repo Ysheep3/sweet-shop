@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController("employeeController")
@@ -74,5 +75,11 @@ public class EmployeeController {
     @PostMapping("/logout")
     public Result<String> logout() {
         return Result.success();
+    }
+
+    @GetMapping("/riderIds")
+    Result<List<Long>> getRiderIds() {
+        List<Long> ids = employeeService.getRiderIds();
+        return Result.success(ids);
     }
 }

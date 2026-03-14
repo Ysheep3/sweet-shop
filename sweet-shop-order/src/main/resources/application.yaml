@@ -30,3 +30,11 @@ sweet:
     notify-url: ${sweet.alipay.notify-url}
   amap:
     key: ${sweet.amap.key}
+
+rocketmq:
+  name-server: ${rocketmq.name-server}
+  producer:
+    group: ${rocketmq.producer.group}
+    send-message-timeout: ${rocketmq.producer.send-message-timeout} # 发送超时时间
+    retry-times-when-send-failed: ${rocketmq.producer.retry-times-when-send-failed} # 同步发送重试次数
+    retry-times-when-send-async-failed: ${rocketmq.producer.retry-times-when-send-failed} # 异步发送重试次数

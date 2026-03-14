@@ -29,7 +29,7 @@ public class OrdersPageDTO {
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime endTime;
 
-    private String number;
+    private String orderNo;
 
     private String phone;
 }

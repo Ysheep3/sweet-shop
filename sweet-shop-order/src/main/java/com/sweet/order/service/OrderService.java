@@ -126,16 +126,16 @@ public interface OrderService {
 
     /**
      * 骑手获取订单
-     * @param status
+     * @param type
      * @return
      */
-    List<OrderVO> getByStatus(Integer status);
+    List<OrderVO> getByStatus(String type);
 
     /**
      * 骑手接单
      * @param orderNo
      */
-    void accept(String orderNo);
+    void accept(String orderNo) throws InterruptedException;
 
     OrderMapVO getOrder(String orderNo);
 
@@ -172,4 +172,17 @@ public interface OrderService {
      * @return
      */
     List<RiderSalaryStatDTO> getRiderSalary(OrderReportDTO orderReportDTO);
+
+    /**
+     * 管理端 出餐
+     * @param id
+     */
+    void foodCompleted(Long id);
+
+    /**
+     * 骑手到店取餐
+     * @param orderNo
+     * @return
+     */
+    Integer pickUp(String orderNo);
 }

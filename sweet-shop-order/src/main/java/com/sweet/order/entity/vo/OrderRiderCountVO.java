@@ -17,4 +17,6 @@ public class OrderRiderCountVO {
     private Integer completedCount;
 
     private Integer todayFinished;
+
+    private Integer acceptedCount;
 }

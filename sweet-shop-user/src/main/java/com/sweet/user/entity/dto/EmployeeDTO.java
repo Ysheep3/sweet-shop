@@ -14,7 +14,7 @@ public class EmployeeDTO {
 
     private String name;
 
-    private String username;
+    //private String username;
 
     private String phone;
 

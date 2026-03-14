@@ -14,7 +14,7 @@
         left join category c on c.id = d.category_id
 
         <where>
-            <if test="dish.name != null and dto.name != ''">
+            <if test="dish.name != null and dish.name != ''">
                 and d.name like concat('%', #{dish.name}, '%')
             </if>
 

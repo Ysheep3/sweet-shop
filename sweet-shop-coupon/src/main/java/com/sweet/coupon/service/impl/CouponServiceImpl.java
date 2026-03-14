@@ -212,17 +212,22 @@ public class CouponServiceImpl implements CouponService {
             throw new CouponBusinessException("库存不能为空");
         }
 
-        if (couponDTO.getReduceAmount() == null) {
-            throw new CouponBusinessException("减免金额不能为空");
+
+        if (couponDTO.getType().equals(CouponTypeEnum.FULL_REDUCE.getCode())
+                || couponDTO.getType().equals(CouponTypeEnum.REDUCE.getCode())) {
+            if (couponDTO.getReduceAmount() == null) {
+                throw new CouponBusinessException("减免金额不能为空");
+            }
+
+            if (couponDTO.getReduceAmount().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new CouponBusinessException("减免金额必须大于0");
+            }
         }
 
-        if (couponDTO.getReduceAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new CouponBusinessException("减免金额必须大于0");
-        }
 
         if (couponDTO.getType().equals(CouponTypeEnum.FULL_REDUCE.getCode())) {
             if (couponDTO.getConditionAmount() == null) {
-                throw new CouponBusinessException("满减券的满足条件金额和减免金额不能为空");
+                throw new CouponBusinessException("满减券的满足条件金额不能为空");
             }
 
             if (couponDTO.getConditionAmount().compareTo(BigDecimal.ZERO) <= 0) {
@@ -381,7 +386,6 @@ public class CouponServiceImpl implements CouponService {
 
         String tags = StrUtil.join(",", couponDTO.getTags());
         coupon.setTags(tags);
-
 
 
         boolean startTimeChanged =

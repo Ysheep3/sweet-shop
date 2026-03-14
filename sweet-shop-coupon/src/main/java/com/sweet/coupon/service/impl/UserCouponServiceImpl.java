@@ -131,7 +131,6 @@ public class UserCouponServiceImpl implements UserCouponService {
             userCouponVO.setTags(tags);
             userCouponVOS.add(userCouponVO);
         }
-
         return userCouponVOS;
     }
 

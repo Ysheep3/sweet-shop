@@ -17,8 +17,8 @@
             <if test="order.endTime != null">
                 and order_time &lt; #{order.endTime}
             </if>
-            <if test="order.number != null">
-                and number like concat('%',#{order.number},'%')
+            <if test="order.orderNo != null">
+                and order_no like concat('%',#{order.orderNo},'%')
             </if>
             <if test="order.status != null">
                 and status = #{order.status}

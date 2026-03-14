@@ -17,9 +17,9 @@ public class OrderController {
 
     private final OrderService orderService;
 
-    @GetMapping("/{status}")
-    public Result<List<OrderVO>> listByStatus(@PathVariable Integer status) {
-        List<OrderVO> orderVOS = orderService.getByStatus(status);
+    @GetMapping("/{type}")
+    public Result<List<OrderVO>> listByStatus(@PathVariable String type) {
+        List<OrderVO> orderVOS = orderService.getByStatus(type);
         return Result.success(orderVOS);
     }
 
@@ -30,7 +30,7 @@ public class OrderController {
     }
 
     @PutMapping("/accept/{orderNo}")
-    public Result<Void> acceptOrder(@PathVariable String orderNo) {
+    public Result<Void> acceptOrder(@PathVariable String orderNo) throws InterruptedException {
         orderService.accept(orderNo);
         return Result.success();
     }
@@ -51,5 +51,11 @@ public class OrderController {
     public Result<OrderRiderTrendVO> trend(@PathVariable Integer days) {
         OrderRiderTrendVO vo = orderService.trend(days);
         return Result.success(vo)   ;
+    }
+
+    @PutMapping("/pickUp/{orderNo}")
+    public Result<Integer> pickUp(@PathVariable String orderNo) {
+        Integer status = orderService.pickUp(orderNo);
+        return Result.success(status);
     }
 }

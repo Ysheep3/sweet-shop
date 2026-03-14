@@ -17,4 +17,8 @@ public class OrderCountVO {
     private Long confirmed;// confirmed
 
     private Long deliveryInProgress;// deliveryInProgress
+
+    private Long toBePickUp;// toBePickUp
+
+    private Long pickingUp;// pickingUp
 }
