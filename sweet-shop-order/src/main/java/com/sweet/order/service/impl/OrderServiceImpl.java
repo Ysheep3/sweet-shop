@@ -472,7 +472,7 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus(OrderStatusEnum.ACCEPTED.getCode());
         orderMapper.updateById(order);
 
-        // TODO 接完单之后 通过算法派单给骑手
+        // 接完单之后 通过算法派单给骑手
         // 获取店内所有骑手
         Result<List<Long>> result = employeeClient.getRiderIds();
         List<Long> ids = result.getData();
